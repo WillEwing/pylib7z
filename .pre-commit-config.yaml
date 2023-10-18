@@ -14,7 +14,7 @@ repos:
       - id: black
         language: python
         types: [python]
-        args: ["--target-version=py310", "--line-length=160"]
+        args: ["--target-version=py38", "--line-length=160"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
