@@ -5,7 +5,6 @@ Python bindings to the 7-Zip Library
 
 __author__ = "Mark Harviston, William Ewing"
 __license__ = "BSD"
-__version__ = "0.1.1"
 
 from uuid import UUID as GUID
 from collections import namedtuple
