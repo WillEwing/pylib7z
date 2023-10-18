@@ -1,0 +1,19 @@
+[build-system]
+requres = ['setuptools', 'setuptools-scm']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'lib7zip'
+authors = [
+    { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
+    { name = "William Ewing", email = "will.ewing.iv@gmail.com" },
+]
+description = "Python bindings to the 7-Zip Library"
+license = { text = "BSD" }
+readme = "README.rst"
+
+requires-python = ">=3.3"
+dependencies = ["cffi", "enum34; python_version < 3.4"]
+
+classifiers = ["Programming Language :: Python :: 3"]
+dynamic = ["version"]
