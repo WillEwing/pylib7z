@@ -7,7 +7,9 @@ __author__ = "Mark Harviston, William Ewing"
 __license__ = "BSD"
 __version__ = "0.1.1"
 
+from uuid import UUID as GUID
 from collections import namedtuple
+from dataclasses import dataclass
 from functools import partial
 import os.path
 import sys
@@ -156,25 +158,37 @@ get_bool_prop = partial(get_prop, prop_name="bVal", istype=VARTYPE.VT_BOOL, conv
 get_uint64_prop = partial(get_prop, prop_name="uhVal", istype=VARTYPE.VT_UI8, convert=int)
 get_uint32_prop = partial(get_prop, prop_name="ulVal", istype=VARTYPE.VT_UI4, convert=lambda x: x)
 
-Format = namedtuple("Format", ("classid", "extensions", "index", "start_signature"))
+
+@dataclass
+class Format:
+    name: str
+    index: int
+    classid: GUID
+    extensions: tuple[str]
+    start_signature: bytes
 
 
-def get_format_info():
-    log.debug("get_format_info()")
-    num_formats = ffi.new("uint32_t*")
-    RNOK(dll7z.GetNumberOfFormats(num_formats))
-    assert num_formats != ffi.NULL
-    log.debug("GetNumberOfFormats() == %d", num_formats[0])
+def get_format_info(format_idx):
+    extensions_raw = get_string_prop(format_idx, FormatProps.kExtension, dll7z.GetHandlerProperty2)
+    extensions = tuple(extensions_raw.split())
+    return Format(
+        name=get_string_prop(format_idx, FormatProps.kName, dll7z.GetHandlerProperty2),
+        index=format_idx,
+        classid=get_classid(format_idx, FormatProps.kClassID, dll7z.GetHandlerProperty2),
+        extensions=extensions,
+        start_signature=get_bytes_prop(format_idx, FormatProps.kStartSignature, dll7z.GetHandlerProperty2),
+    )
 
-    return {
-        get_string_prop(i, FormatProps.kName, dll7z.GetHandlerProperty2): Format(
-            classid=get_classid(i, FormatProps.kClassID, dll7z.GetHandlerProperty2),
-            extensions=tuple(get_string_prop(i, FormatProps.kExtension, dll7z.GetHandlerProperty2).split()),
-            index=i,
-            start_signature=get_bytes_prop(i, FormatProps.kStartSignature, dll7z.GetHandlerProperty2),
-        )
-        for i in range(num_formats[0])
-    }
+
+def get_num_formats() -> int:
+    num_formats_ptr = ffi.new("uint32_t[1]", [0])
+    RNOK(dll7z.GetNumberOfFormats(num_formats_ptr))
+    return num_formats_ptr[0]
+
+
+def get_formats():
+    num_formats = get_num_formats()
+    return {fmt.name: fmt for fmt in (get_format_info(n) for n in range(num_formats))}
 
 
 Method = namedtuple("Method", ("name", "id", "encoder", "decoder", "encoder_assigned", "decoder_assigned"))
@@ -186,7 +200,7 @@ def get_method_info():
     RNOK(dll7z.GetNumberOfMethods(num_methods))
     assert num_methods != ffi.NULL
     log.debug("num_methods=%d", int(num_methods[0]))
-    return [
+    method_info = [
         Method(
             get_string_prop(i, MethodProps.kName, dll7z.GetMethodProperty),
             get_uint64_prop(i, MethodProps.kID, dll7z.GetMethodProperty),
@@ -198,12 +212,13 @@ def get_method_info():
         for i in range(num_methods[0])
     ]
     log.debug("got method info")
+    return method_info
 
 
 getting_meths = False
 log.debug("initializing")
-formats = get_format_info()
-max_sig_size = max(len(f.start_signature) for f in formats.values())
+formats = get_formats()
+max_sig_size = max((len(f.start_signature) for f in formats.values() if f.start_signature is not None))
 getting_meths = True
 methods = get_method_info()
 
