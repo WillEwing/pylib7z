@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Helper functions for dealing with windows types defined in wintypes like PROPVARIANT, GUID*, and HRESULT
 """
@@ -5,29 +6,36 @@ Helper functions for dealing with windows types defined in wintypes like PROPVAR
 import uuid
 from . import ffi, C, free_propvariant, log
 from .wintypes import *
-#from bitstring import BitArray
-#import warnings
+
+# from bitstring import BitArray
+# import warnings
 from datetime import datetime, timedelta
 
+
 def guidp2uuid(guid):
-	"""GUID* -> uuid.UUID"""
-	#if guid == ffi.NULL:
-	#	return None
-	return uuid.UUID(bytes_le=bytes(guid[0]))
+    """GUID* -> uuid.UUID"""
+    # if guid == ffi.NULL:
+    # 	return None
+    return uuid.UUID(bytes_le=bytes(guid[0]))
+
 
 def uuid2guidp(uu):
-	"""uuid.UUID -> GUID*"""
-	return ffi.new('GUID*', uu.bytes_le)
+    """uuid.UUID -> GUID*"""
+    return ffi.new("GUID*", uu.bytes_le)
 
-class HRESULTException(Exception): pass
+
+class HRESULTException(Exception):
+    pass
+
 
 def RNOK(code):
-	""" raise error if not S_OK """
-	# TODO raise different Exception based on result
-	if code == HRESULT.S_OK.value: return
-	#parse HRESULT
-	
-	'''
+    """raise error if not S_OK"""
+    # TODO raise different Exception based on result
+    if code == HRESULT.S_OK.value:
+        return
+    # parse HRESULT
+
+    """
 	barr = BitArray(uint=code, length=32)
 
 	# first 2 bits are status
@@ -61,75 +69,80 @@ def RNOK(code):
 			raise HRESULTException(hresult.name + ': ' + hresult.desc)
 		except ValueError:
 			raise HRESULTException('HRESULT, %d/04x', facility, h_code)
-	'''
+	"""
 
-	try:
-		hresult = HRESULT(code)
-		raise HRESULTException(hresult.name + ': ' + hresult.desc)
-	except ValueError:
-		raise HRESULTException('HRESULT, %08x', code)
+    try:
+        hresult = HRESULT(code)
+        raise HRESULTException(hresult.name + ": " + hresult.desc)
+    except ValueError:
+        raise HRESULTException("HRESULT, %08x", code)
+
 
 def dealloc_propvariant(pvar):
-	log.debug('deallocing propvariant')
-	if pvar == ffi.NULL:
-		log.debug('pvar == NULL')
-		return
-	log.debug('...')
-	free_propvariant(pvar)
-	log.debug('...')
-	C.free(pvar)
-	pvar = ffi.NULL
-	log.debug('...')
-	log.debug('dealloced propvariant')
+    log.debug("deallocing propvariant")
+    if pvar == ffi.NULL:
+        log.debug("pvar == NULL")
+        return
+    log.debug("...")
+    free_propvariant(pvar)
+    log.debug("...")
+    C.free(pvar)
+    pvar = ffi.NULL
+    log.debug("...")
+    log.debug("dealloced propvariant")
+
 
 def alloc_propvariant():
-	return ffi.gc(C.calloc(1, ffi.sizeof('PROPVARIANT')), dealloc_propvariant)
-	#return ffi.new('PROPVARIANT*')
-	
+    return ffi.gc(C.calloc(1, ffi.sizeof("PROPVARIANT")), dealloc_propvariant)
+    # return ffi.new('PROPVARIANT*')
+
+
 def get_prop_val(fn, forcetype=None, checktype=None):
-	"""
-	fn should have the signature:
-	HRESULT fn(PROPVARIANT*);
-	"""
-	ptr = alloc_propvariant()
-	RNOK(fn(ptr))
-	pvar = ffi.cast('PROPVARIANT*', ptr)
-	vt = forcetype or VARTYPE(pvar.vt)
-	if pvar.vt in (VARTYPE.VT_EMPTY, VARTYPE.VT_NULL):
-		# always check for null, pvar.vt is not a bug
-		return None
-		
-	if checktype:
-		if checktype == True:
-			checktype = forcetype
-		assert pvar.vt == checktype
+    """
+    fn should have the signature:
+    HRESULT fn(PROPVARIANT*);
+    """
+    ptr = alloc_propvariant()
+    RNOK(fn(ptr))
+    pvar = ffi.cast("PROPVARIANT*", ptr)
+    vt = forcetype or VARTYPE(pvar.vt)
+    if pvar.vt in (VARTYPE.VT_EMPTY, VARTYPE.VT_NULL):
+        # always check for null, pvar.vt is not a bug
+        return None
 
-	if vt in (VARTYPE.VT_UI4, VARTYPE.VT_UINT):
-		return int(pvar.ulVal)
-	elif vt == VARTYPE.VT_UI8:
-		return int(pvar.uhVal)
-	elif vt == VARTYPE.VT_BOOL:
-		return int(pvar.bVal) != 0
-	elif vt == VARTYPE.VT_CLSID:
-		return guidp2uu(pvar.puuid)
-	elif vt == VARTYPE.VT_BSTR:
-		return ffi.string(pvar.bstrVal)
-	elif False: #vt == VARTYPE.VT_FILETIME:
-		#FIXME This should work but it totally doesn't
-		timestamp = int(pvar.filetime.dwLowDateTime)
-		timestamp += int(pvar.filetime.dwLowDateTime) << 32
-		#timestamp is in 100-nanosecond intervals, convert to nanoseconds
-		timestamp *= 100
-		#convert to seconds
-		timestamp /= 1e9
+    if checktype:
+        if checktype == True:
+            checktype = forcetype
+        assert pvar.vt == checktype
 
-		#timestamp is now the number of seconds since Jan 1, 1601 CE
-		jan01_1601 = datetime(year=1601, month=1, day=1)
-		delta = timedelta(seconds=timestamp)
-		import pdb; pdb.set_trace()
-		return jan01_1601 + delta
-		
-		# timestamp isn't guaranteed to be UTC (it isn't on FAT for example)
-		# it is however recommended, hope 7zip enforces that.
-	else:
-		raise TypeError("type code %d not supported" % vt)
+    if vt in (VARTYPE.VT_UI4, VARTYPE.VT_UINT):
+        return int(pvar.ulVal)
+    elif vt == VARTYPE.VT_UI8:
+        return int(pvar.uhVal)
+    elif vt == VARTYPE.VT_BOOL:
+        return int(pvar.bVal) != 0
+    elif vt == VARTYPE.VT_CLSID:
+        return guidp2uu(pvar.puuid)
+    elif vt == VARTYPE.VT_BSTR:
+        return ffi.string(pvar.bstrVal)
+    elif False:  # vt == VARTYPE.VT_FILETIME:
+        # FIXME This should work but it totally doesn't
+        timestamp = int(pvar.filetime.dwLowDateTime)
+        timestamp += int(pvar.filetime.dwLowDateTime) << 32
+        # timestamp is in 100-nanosecond intervals, convert to nanoseconds
+        timestamp *= 100
+        # convert to seconds
+        timestamp /= 1e9
+
+        # timestamp is now the number of seconds since Jan 1, 1601 CE
+        jan01_1601 = datetime(year=1601, month=1, day=1)
+        delta = timedelta(seconds=timestamp)
+        import pdb
+
+        pdb.set_trace()
+        return jan01_1601 + delta
+
+        # timestamp isn't guaranteed to be UTC (it isn't on FAT for example)
+        # it is however recommended, hope 7zip enforces that.
+    else:
+        raise TypeError("type code %d not supported" % vt)

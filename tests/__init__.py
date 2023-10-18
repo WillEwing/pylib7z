@@ -1,1 +1,2 @@
-#needed for coverage.py to be cool
+# -*- coding: utf-8 -*-
+# needed for coverage.py to be cool
