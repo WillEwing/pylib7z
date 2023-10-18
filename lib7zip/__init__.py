@@ -3,9 +3,9 @@
 Python bindings to the 7-Zip Library
 """
 
-__author__ = "Mark Harviston <mark.harviston@gmail.com>"
+__author__ = "Mark Harviston, William Ewing"
 __license__ = "BSD"
-__version__ = "0.1"
+__version__ = "0.1.1"
 
 from collections import namedtuple
 from functools import partial
@@ -20,6 +20,7 @@ if os.environ.get("DEBUG"):
     log.debug("begin")
 
 
+from ctypes.util import find_library, find_msvcrt
 from cffi import FFI
 
 ffi = FFI()
@@ -57,15 +58,27 @@ env_path = os.environ.get("7ZDLL_PATH")
 dll_paths = [env_path] if env_path else []
 
 if "win" in sys.platform:
-    log.info("autodetecting dll path from registry")
-    from winreg import OpenKey, QueryValueEx, HKEY_LOCAL_MACHINE, KEY_READ
+    try:
+        log.info("Detecting 7z.dll path from registry")
+        from winreg import OpenKey, QueryValueEx, HKEY_LOCAL_MACHINE, KEY_READ
 
-    aKey = OpenKey(HKEY_LOCAL_MACHINE, r"SOFTWARE\7-Zip", 0, KEY_READ)
-    s7z_path = QueryValueEx(aKey, "Path")[0]
-    dll_paths.append(os.path.join(s7z_path, "7z.dll"))
+        aKey = OpenKey(HKEY_LOCAL_MACHINE, r"SOFTWARE\7-Zip", 0, KEY_READ)
+        s7z_path = QueryValueEx(aKey, "Path")[0]
+        dll_paths.append(os.path.join(s7z_path, "7z.dll"))
+    except WinError:
+        log.warn("Could not find 7-zip installation info in registry.")
+
+    if not dll_paths:
+        log.info("Searching for 7z.dll in default search path.")
+        maybe_lib7z_path = find_library("7z")
+        if maybe_lib7z_path:
+            dll_paths.append(maybe_lib7z_path)
 
     ole32 = ffi.dlopen("ole32")
     free_propvariant = lambda x: ole32.PropVariantClear(x)
+
+    # NOTE: Apparently, Python doesn't know what msvcrt it's using sometimes?
+    libc_path = find_msvcrt() or find_library("ucrtbase")
 else:
 
     def free_propvariant(void_p):
@@ -82,6 +95,8 @@ else:
         for prefix in prefixes:
             dll_paths.append(os.path.join(prefix, suffix))
 
+    libc_path = find_library("c")
+
 log.info("dll_paths: %r", dll_paths)
 dll7z = None
 for dll_path in dll_paths:
@@ -97,7 +112,7 @@ for dll_path in dll_paths:
 if dll7z is None:
     raise Exception("Could not find 7z.dll/7z.so")
 
-C = ffi.dlopen(None)
+C = ffi.dlopen(libc_path)
 
 from .winhelpers import get_prop_val, guidp2uuid, alloc_propvariant, RNOK
 
