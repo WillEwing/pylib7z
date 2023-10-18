@@ -181,52 +181,51 @@ def get_format_info(format_idx):
 
 
 def get_num_formats() -> int:
-    num_formats_ptr = ffi.new("uint32_t[1]", [0])
-    RNOK(dll7z.GetNumberOfFormats(num_formats_ptr))
-    return num_formats_ptr[0]
+    num_formats = ffi.new("uint32_t[1]", [0])
+    RNOK(dll7z.GetNumberOfFormats(num_formats))
+    return num_formats[0]
 
 
 def get_formats():
     num_formats = get_num_formats()
-    return {fmt.name: fmt for fmt in (get_format_info(n) for n in range(num_formats))}
+    return {format.name: format for format in (get_format_info(format_idx) for format_idx in range(num_formats))}
 
 
-Method = namedtuple("Method", ("name", "id", "encoder", "decoder", "encoder_assigned", "decoder_assigned"))
+@dataclass
+class Method:
+    name: str
+    id: int
+    encoder: GUID
+    decoder: GUID
+    encoder_assigned: bool
+    decoder_assigned: bool
 
 
-def get_method_info():
-    log.debug("getting methods")
-    num_methods = ffi.new("uint32_t*")
+def get_method_info(method_idx):
+    return Method(
+        name=get_string_prop(method_idx, MethodProps.kName, dll7z.GetMethodProperty),
+        id=get_uint64_prop(method_idx, MethodProps.kID, dll7z.GetMethodProperty),
+        encoder=get_classid(method_idx, MethodProps.kEncoder, dll7z.GetMethodProperty),
+        decoder=get_classid(method_idx, MethodProps.kDecoder, dll7z.GetMethodProperty),
+        encoder_assigned=get_bool_prop(method_idx, MethodProps.kEncoderIsAssigned, dll7z.GetMethodProperty),
+        decoder_assigned=get_bool_prop(method_idx, MethodProps.kDecoderIsAssigned, dll7z.GetMethodProperty),
+    )
+
+
+def get_num_methods():
+    num_methods = ffi.new("uint32_t[1]", [0])
     RNOK(dll7z.GetNumberOfMethods(num_methods))
-    assert num_methods != ffi.NULL
-    log.debug("num_methods=%d", int(num_methods[0]))
-    method_info = [
-        Method(
-            get_string_prop(i, MethodProps.kName, dll7z.GetMethodProperty),
-            get_uint64_prop(i, MethodProps.kID, dll7z.GetMethodProperty),
-            get_classid(i, MethodProps.kEncoder, dll7z.GetMethodProperty),
-            get_classid(i, MethodProps.kDecoder, dll7z.GetMethodProperty),
-            get_bool_prop(i, MethodProps.kEncoderIsAssigned, dll7z.GetMethodProperty),
-            get_bool_prop(i, MethodProps.kDecoderIsAssigned, dll7z.GetMethodProperty),
-        )
-        for i in range(num_methods[0])
-    ]
-    log.debug("got method info")
-    return method_info
+    return num_methods[0]
 
 
-getting_meths = False
+def get_methods():
+    num_methods = get_num_methods()
+    return [get_method_info(method_idx) for method_idx in range(num_methods)]
+
+
 log.debug("initializing")
 formats = get_formats()
 max_sig_size = max((len(f.start_signature) for f in formats.values() if f.start_signature is not None))
-getting_meths = True
-methods = get_method_info()
-
-"""
-from pprint import pprint
-from functools import partial
-pp = partial(pprint, indent=True)
-pp(methods)
-"""
+methods = get_methods()
 
 from .archive import Archive  # noqa
