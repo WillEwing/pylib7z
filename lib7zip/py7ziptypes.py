@@ -133,15 +133,19 @@ typedef struct { _IArchiveOpenSetSubArchiveName_vtable* vtable; } IArchiveOpenSe
 
 
 class FormatProps(IntEnum):
-    kName = 0
-    kClassID = 1
-    kExtension = 2
-    kAddExtension = 3
-    kUpdate = 4
-    kKeepName = 5
-    kStartSignature = 6
-    kFinishSignature = 7
-    kAssociate = 8
+    kName = 0  # str
+    kClassID = 1  # str or GID
+    kExtension = 2  # str
+    kAddExtension = 3  # str
+    kUpdate = 4  # bool
+    kKeepName = 5  # bool
+    kSignature = 6  # bytes or str
+    kMultiSignature = 7  # bytes or str
+    kSignatureOffset = 8  # uint32_t
+    kAltStreams = 9  # bool
+    kNtSecure = 10  # bool
+    kFlags = 11  # uint32_t
+    kTimeFlags = 12  # uint32_t
 
 
 class MethodProps(IntEnum):

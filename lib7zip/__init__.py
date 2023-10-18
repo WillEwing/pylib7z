@@ -161,22 +161,42 @@ get_uint32_prop = partial(get_prop, prop_name="ulVal", istype=VARTYPE.VT_UI4, co
 
 @dataclass
 class Format:
-    name: str
     index: int
+    name: str
     classid: GUID
     extensions: tuple[str]
-    start_signature: bytes
+    signature: bytes | tuple[bytes]
+    signature_offset: int
+
+
+def parse_multi_signature(raw_msig: bytes) -> tuple[bytes]:
+    pos = 0
+    sigs = []
+    while pos < len(raw_msig):
+        size = raw_msig[pos]
+        sigs.append(raw_msig[1 : size + 1])
+        pos = pos + size + 1
+    return sigs
 
 
 def get_format_info(format_idx):
     extensions_raw = get_string_prop(format_idx, FormatProps.kExtension, dll7z.GetHandlerProperty2)
     extensions = tuple(extensions_raw.split())
+    signature_offset = get_uint32_prop(format_idx, FormatProps.kSignatureOffset, dll7z.GetHandlerProperty2)
+
+    multi_signature = get_bytes_prop(format_idx, FormatProps.kMultiSignature, dll7z.GetHandlerProperty2)
+    if multi_signature:
+        signature = parse_multi_signature(multi_signature)
+    else:
+        signature = get_bytes_prop(format_idx, FormatProps.kSignature, dll7z.GetHandlerProperty2)
+
     return Format(
-        name=get_string_prop(format_idx, FormatProps.kName, dll7z.GetHandlerProperty2),
         index=format_idx,
+        name=get_string_prop(format_idx, FormatProps.kName, dll7z.GetHandlerProperty2),
         classid=get_classid(format_idx, FormatProps.kClassID, dll7z.GetHandlerProperty2),
         extensions=extensions,
-        start_signature=get_bytes_prop(format_idx, FormatProps.kStartSignature, dll7z.GetHandlerProperty2),
+        signature=signature or multi_signature,
+        signature_offset=signature_offset,
     )
 
 
@@ -193,8 +213,8 @@ def get_formats():
 
 @dataclass
 class Method:
-    name: str
     id: int
+    name: str
     encoder: GUID
     decoder: GUID
     encoder_assigned: bool
@@ -223,9 +243,21 @@ def get_methods():
     return [get_method_info(method_idx) for method_idx in range(num_methods)]
 
 
+def get_max_signature_size():
+    def signatures():
+        for format in formats.values():
+            if isinstance(format.signature, bytes):
+                yield format.signature
+            elif isinstance(format.signature, tuple):
+                yield from format.signature
+
+    sizes = [len(sig) for sig in signatures()]
+    return max(sizes) if sizes else 0
+
+
 log.debug("initializing")
 formats = get_formats()
-max_sig_size = max((len(f.start_signature) for f in formats.values() if f.start_signature is not None))
+max_sig_size = get_max_signature_size()
 methods = get_methods()
 
 from .archive import Archive  # noqa
