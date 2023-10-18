@@ -165,7 +165,7 @@ class Format:
     name: str
     classid: GUID
     extensions: tuple[str]
-    signature: bytes | tuple[bytes]
+    signatures: bytes | tuple[bytes]
     signature_offset: int
 
 
@@ -174,9 +174,9 @@ def parse_multi_signature(raw_msig: bytes) -> tuple[bytes]:
     sigs = []
     while pos < len(raw_msig):
         size = raw_msig[pos]
-        sigs.append(raw_msig[1 : size + 1])
+        sigs.append(bytes(raw_msig[1 : size + 1]))
         pos = pos + size + 1
-    return sigs
+    return tuple(sigs)
 
 
 def get_format_info(format_idx):
@@ -185,17 +185,23 @@ def get_format_info(format_idx):
     signature_offset = get_uint32_prop(format_idx, FormatProps.kSignatureOffset, dll7z.GetHandlerProperty2)
 
     multi_signature = get_bytes_prop(format_idx, FormatProps.kMultiSignature, dll7z.GetHandlerProperty2)
+    signature = get_bytes_prop(format_idx, FormatProps.kSignature, dll7z.GetHandlerProperty2)
     if multi_signature:
-        signature = parse_multi_signature(multi_signature)
+        signatures = parse_multi_signature(multi_signature)
+    elif signature:
+        signatures = (signature,)
     else:
-        signature = get_bytes_prop(format_idx, FormatProps.kSignature, dll7z.GetHandlerProperty2)
+        signatures = ()
+
+    assert isinstance(signatures, tuple)
+    assert all(lambda sig: isinstance(int, sig) for sig in signatures)
 
     return Format(
         index=format_idx,
         name=get_string_prop(format_idx, FormatProps.kName, dll7z.GetHandlerProperty2),
         classid=get_classid(format_idx, FormatProps.kClassID, dll7z.GetHandlerProperty2),
         extensions=extensions,
-        signature=signature or multi_signature,
+        signatures=signatures,
         signature_offset=signature_offset,
     )
 
@@ -244,14 +250,9 @@ def get_methods():
 
 
 def get_max_signature_size():
-    def signatures():
-        for format in formats.values():
-            if isinstance(format.signature, bytes):
-                yield format.signature
-            elif isinstance(format.signature, tuple):
-                yield from format.signature
-
-    sizes = [len(sig) for sig in signatures()]
+    sizes = []
+    for format in formats.values():
+        sizes.extend((len(sig) for sig in format.signatures))
     return max(sizes) if sizes else 0
 
 

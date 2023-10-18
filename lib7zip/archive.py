@@ -2,7 +2,9 @@
 from functools import partial
 import io
 
-from . import ffi, dll7z, max_sig_size, formats, log
+import os.path
+
+from . import ffi, dll7z, max_sig_size, formats, log, Format
 from . import py7ziptypes
 
 from .winhelpers import uuid2guidp, get_prop_val, RNOK
@@ -15,31 +17,27 @@ from .cmpcodecsinfo import CompressCodecsInfo
 
 class Archive:
     def __init__(self, filename, forcetype=None, password=None):
+        self.filename = filename
         self.password = password
-        self.tmp_archive = ffi.new("void**")
         self._path2idx = {}
         self._idx2itm = {}
         self._num_items = None
-        iid = uuid2guidp(py7ziptypes.IID_IInArchive)
 
         self.stream = FileInStream(filename)
         stream_inst = self.stream.instances[py7ziptypes.IID_IInStream]
 
         if forcetype is not None:
-            format = formats[forcetype]
+            possible_formats = [formats[forcetype]]
         else:
-            format = self._guess_format()
+            possible_formats = self._get_possible_formats()
 
-        classid = uuid2guidp(format.classid)
+        for format in possible_formats:
+            if self._try_open_format(format):
+                break
+        else:
+            raise RuntimeError("%r: No format", self.filename)
 
-        log.debug("Create Archive (class=%r, iface=%r)", format.classid, py7ziptypes.IID_IInArchive)
-
-        RNOK(dll7z.CreateObject(classid, iid, self.tmp_archive))
-        assert self.tmp_archive[0] != ffi.NULL
-        self.archive = archive = ffi.cast("IInArchive*", self.tmp_archive[0])
-
-        assert archive.vtable.GetNumberOfItems != ffi.NULL
-        assert archive.vtable.GetProperty != ffi.NULL
+        archive = self.archive
 
         log.debug("creating callback obj")
         self.open_cb = callback = ArchiveOpenCallback(password=password)
@@ -76,17 +74,41 @@ class Archive:
         assert archive.vtable.GetProperty != ffi.NULL
         log.debug("successfully opened archive")
 
-    def _guess_format(self):
-        log.debug("guess format")
-        file = self.stream.filelike
-        sigcmp = file.read(max_sig_size)
-        for name, format in formats.items():
-            if format.start_signature and sigcmp.startswith(format.start_signature):
-                log.info("guessed file format: %s" % name)
-                file.seek(0)
-                return format
+    def _try_open_format(self, format: Format) -> bool:
+        log.debug("Trying to open archive %r as format %s.", self.filename, format.name)
 
-        assert False
+        iid = uuid2guidp(py7ziptypes.IID_IInArchive)
+        classid = uuid2guidp(format.classid)
+
+        archive_raw = ffi.new("void**")
+        RNOK(dll7z.CreateObject(classid, iid, archive_raw))
+
+        if archive_raw[0] == ffi.NULL:
+            return False
+
+        self.archive_raw = archive_raw
+        self.archive = ffi.cast("IInArchive*", archive_raw[0])
+
+        assert self.archive.vtable.GetNumberOfItems != ffi.NULL
+        assert self.archive.vtable.GetProperty != ffi.NULL
+
+        return True
+
+    def _get_possible_formats(self) -> list[Format]:
+        file = self.stream.filelike
+        sig_buf = file.read(max_sig_size)
+        file.seek(0)
+
+        possible_formats = []
+        for format in formats.values():
+            if format.signatures and format.signature_offset == 0 and not any((sig_buf[: len(sig)] for sig in format.signatures)):
+                continue
+            # TODO: Handle 'backward open' files.
+            if not any(self.filename.endswith(f".{ext}") for ext in format.extensions):
+                continue
+            possible_formats.append(format)
+
+        return possible_formats
 
     def __enter__(self, *args, **kwargs):
         return self
