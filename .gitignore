@@ -10,5 +10,7 @@ Makefile
 *.exe
 __pycache__
 *.pyc
-/*.egg-info/*
+*.egg-info/*
 .coverage
+.vscode/
+.pytest_cache/
