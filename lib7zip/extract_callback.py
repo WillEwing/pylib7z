@@ -118,7 +118,7 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
 
     def GetStream(self, me, index, outStream, askExtractMode):
         askExtractMode = AskMode(askExtractMode)
-        log.debug("GetStream(%d, -, %d)", index, askExtractMode)
+        log.debug("GetStream(%d, -, %r)", index, askExtractMode)
 
         if askExtractMode != AskMode.kExtract:
             return HRESULT.S_OK.value
