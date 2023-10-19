@@ -3,9 +3,9 @@ from .comtypes import IID_IUnknown
 from .py7ziptypes import IID_ICryptoGetTextPassword, IID_IArchiveOpenCallback, IID_IArchiveOpenVolumeCallback, IID_IArchiveOpenSetSubArchiveName
 from .simplecom import IUnknownImpl
 
-from .wintypes import HRESULT
+from .wintypes import HRESULT, VARTYPE
 from .winhelpers import guidp2uuid
-from . import log, ffi, wintypes
+from . import log, ffi
 
 
 class ArchiveOpenCallback(IUnknownImpl):
@@ -42,7 +42,7 @@ class ArchiveOpenCallback(IUnknownImpl):
 
     def GetProperty(self, me, propID, value):
         log.debug("GetProperty propID={}".format(propID))
-        value.vt = wintypes.VT_EMPTY
+        value.vt = VARTYPE.VT_EMPTY
         return HRESULT.S_OK.value
 
     def GetStream(self, me, name, inStream):
