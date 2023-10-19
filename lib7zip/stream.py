@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 import logging
-from .py7ziptypes import IID_IInStream, IID_ISequentialInStream, IID_IOutStream, IID_ISequentialOutStream
 from os import PathLike
 from typing import BinaryIO
 
-from .wintypes import HRESULT
-from .winhelpers import guidp2uuid
 from . import ffi, wintypes
-
+from .py7ziptypes import (
+    IID_IInStream,
+    IID_IOutStream,
+    IID_ISequentialInStream,
+    IID_ISequentialOutStream,
+)
 from .simplecom import IUnknownImpl
+from .winhelpers import guidp2uuid
+from .wintypes import HRESULT
 
 log = logging.getLogger(__name__)
 

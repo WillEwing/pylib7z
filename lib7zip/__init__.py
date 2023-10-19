@@ -6,14 +6,13 @@ Python bindings to the 7-Zip Library
 __author__ = "Mark Harviston, William Ewing"
 __license__ = "BSD"
 
-from uuid import UUID as GUID
+import logging
+import os.path
+import sys
 from collections import namedtuple
 from dataclasses import dataclass
 from functools import partial
-import os.path
-import sys
-
-import logging
+from uuid import UUID as GUID
 
 log = logging.getLogger(__name__)
 if os.environ.get("DEBUG"):
@@ -22,13 +21,14 @@ if os.environ.get("DEBUG"):
 
 
 from ctypes.util import find_library, find_msvcrt
+
 from cffi import FFI
 
 ffi = FFI()
 
-from . import wintypes, py7ziptypes, comtypes
-from .wintypes import VARTYPE
+from . import comtypes, py7ziptypes, wintypes
 from .py7ziptypes import FormatProps, MethodProps
+from .wintypes import VARTYPE
 
 ffi.cdef(wintypes.CDEFS)
 ffi.cdef(comtypes.CDEFS)
@@ -61,7 +61,7 @@ dll_paths = [env_path] if env_path else []
 if "win" in sys.platform:
     try:
         log.info("Detecting 7z.dll path from registry")
-        from winreg import OpenKey, QueryValueEx, HKEY_LOCAL_MACHINE, KEY_READ
+        from winreg import HKEY_LOCAL_MACHINE, KEY_READ, OpenKey, QueryValueEx
 
         aKey = OpenKey(HKEY_LOCAL_MACHINE, r"SOFTWARE\7-Zip", 0, KEY_READ)
         s7z_path = QueryValueEx(aKey, "Path")[0]
@@ -121,7 +121,7 @@ if libc_path is None:
 
 C = ffi.dlopen(libc_path)
 
-from .winhelpers import get_prop_val, guidp2uuid, alloc_propvariant, RNOK
+from .winhelpers import RNOK, alloc_propvariant, get_prop_val, guidp2uuid
 
 
 def get_prop(idx, propid, get_fn, prop_name, convert, istype=None):

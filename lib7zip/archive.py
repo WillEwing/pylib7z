@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
-from functools import partial
 import io
-
 import os.path
+from functools import partial
 
-from . import ffi, dll7z, max_sig_size, formats, log, Format
-from . import py7ziptypes
-
-from .winhelpers import uuid2guidp, get_prop_val, RNOK
-
-from .open_callback import ArchiveOpenCallback
-from .extract_callback import ArchiveExtractToDirectoryCallback, ArchiveExtractToStreamCallback
-from .stream import FileInStream
+from . import Format, dll7z, ffi, formats, log, max_sig_size, py7ziptypes
 from .cmpcodecsinfo import CompressCodecsInfo
+from .extract_callback import (
+    ArchiveExtractToDirectoryCallback,
+    ArchiveExtractToStreamCallback,
+)
+from .open_callback import ArchiveOpenCallback
+from .stream import FileInStream
+from .winhelpers import RNOK, get_prop_val, uuid2guidp
 
 
 class Archive:

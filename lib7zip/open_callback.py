@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
+from . import ffi, log
 from .comtypes import IID_IUnknown
-from .py7ziptypes import IID_ICryptoGetTextPassword, IID_IArchiveOpenCallback, IID_IArchiveOpenVolumeCallback, IID_IArchiveOpenSetSubArchiveName
+from .py7ziptypes import (
+    IID_IArchiveOpenCallback,
+    IID_IArchiveOpenSetSubArchiveName,
+    IID_IArchiveOpenVolumeCallback,
+    IID_ICryptoGetTextPassword,
+)
 from .simplecom import IUnknownImpl
-
-from .wintypes import HRESULT, VARTYPE
 from .winhelpers import guidp2uuid
-from . import log, ffi
+from .wintypes import HRESULT, VARTYPE
 
 
 class ArchiveOpenCallback(IUnknownImpl):

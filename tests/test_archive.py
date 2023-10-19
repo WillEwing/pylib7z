@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+import io
+import logging
+import os
+import shutil
+from collections import namedtuple
 from functools import partial
 from glob import glob
-import io
-import shutil
-import os
 from tempfile import mkdtemp
+
 import pytest
-from collections import namedtuple
-import logging
 
 from lib7zip import *
 

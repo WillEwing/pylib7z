@@ -4,12 +4,13 @@ Helper functions for dealing with windows types defined in wintypes like PROPVAR
 """
 
 import uuid
-from . import ffi, C, free_propvariant, log
-from .wintypes import *
 
 # from bitstring import BitArray
 # import warnings
 from datetime import datetime, timedelta
+
+from . import C, ffi, free_propvariant, log
+from .wintypes import *
 
 
 def guidp2uuid(guid):

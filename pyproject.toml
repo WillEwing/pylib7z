@@ -17,3 +17,9 @@ dependencies = ["cffi"]
 
 classifiers = ["Programming Language :: Python :: 3"]
 dynamic = ["version"]
+
+[tool.black]
+max-line-length = 160
+
+[tool.isort]
+profile = "black"

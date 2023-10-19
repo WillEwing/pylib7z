@@ -3,11 +3,11 @@ import logging
 
 log = logging.getLogger(__name__)
 
+from . import dll7z, ffi, methods
 from .py7ziptypes import IID_ICompressCodecsInfo
 from .simplecom import IUnknownImpl
-from . import ffi, methods, dll7z
-from .wintypes import HRESULT
 from .winhelpers import uuid2guidp
+from .wintypes import HRESULT
 
 
 class CompressCodecsInfo(IUnknownImpl):

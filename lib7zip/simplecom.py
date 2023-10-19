@@ -4,8 +4,8 @@
 Simple COM, using DRY principles, but w/o too much meta
 """
 import logging
-from . import ffi, guidp2uuid
-from . import wintypes
+
+from . import ffi, guidp2uuid, wintypes
 from .comtypes import IID_IUnknown
 from .wintypes import HRESULT
 

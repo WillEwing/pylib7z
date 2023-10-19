@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-import os, os.path
+import os
+import os.path
 
+from . import C, ffi, log, py7ziptypes
 from .py7ziptypes import (
-    IID_ICryptoGetTextPassword,
-    IID_IArchiveExtractCallback,
-    IID_ISequentialOutStream,
-    IID_ICompressProgressInfo,
-    IID_ICryptoGetTextPassword2,
-    OperationResult,
     AskMode,
+    IID_IArchiveExtractCallback,
+    IID_ICompressProgressInfo,
+    IID_ICryptoGetTextPassword,
+    IID_ICryptoGetTextPassword2,
+    IID_ISequentialOutStream,
+    OperationResult,
 )
-
-from .wintypes import HRESULT
-from . import log, ffi, C, py7ziptypes
 from .simplecom import IUnknownImpl
 from .stream import FileOutStream
+from .wintypes import HRESULT
 
 
 class ArchiveExtractCallback(IUnknownImpl):

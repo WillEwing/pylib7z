@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import uuid
-from .comtypes import CDEF_IUnknown
-from string import Template
 from enum import Enum, IntEnum
+from string import Template
+
+from .comtypes import CDEF_IUnknown
 
 CDEFS = Template(
     """
