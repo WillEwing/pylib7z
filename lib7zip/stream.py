@@ -2,7 +2,7 @@
 import logging
 from .py7ziptypes import IID_IInStream, IID_ISequentialInStream, IID_IOutStream, IID_ISequentialOutStream
 from os import PathLike
-from typing import IO
+from typing import BinaryIO
 
 from .wintypes import HRESULT
 from .winhelpers import guidp2uuid
@@ -25,9 +25,9 @@ class FileInStream(IUnknownImpl):
         IID_ISequentialInStream: "ISequentialInStream",
     }
 
-    def __init__(self, file: IO | PathLike) -> None:
+    def __init__(self, file: BinaryIO | PathLike) -> None:
         if isinstance(file, PathLike):
-            self.filelike = open(file, "rb")
+            self.filelike: BinaryIO = open(file, "rb")
         else:
             self.filelike = file
         super().__init__()
@@ -66,9 +66,9 @@ class FileOutStream(IUnknownImpl):
         IID_ISequentialOutStream: "ISequentialOutStream",
     }
 
-    def __init__(self, file: IO | PathLike) -> None:
+    def __init__(self, file: BinaryIO | PathLike) -> None:
         if isinstance(file, PathLike):
-            self.filelike = open(file, "wb")
+            self.filelike: BinaryIO = open(file, "wb")
         else:
             self.filelike = file
         super().__init__()
