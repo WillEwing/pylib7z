@@ -277,9 +277,9 @@ class ArchiveProps(IntEnum):
     SIZE = 7  # kpidSize
     PACK_SIZE = 8  # kpidPackSize
     ATTRIB = 9  # kpidAttrib
-    C_TIME = 10  # kpidCTime
-    A_TIME = 11  # kpidATime
-    M_TIME = 12  # kpidMTime
+    CTIME = 10  # kpidCTime
+    ATIME = 11  # kpidATime
+    MTIME = 12  # kpidMTime
     SOLID = 13  # kpidSolid
     COMMENTED = 14  # kpidCommented
     ENCRYPTED = 15  # kpidEncrypted
@@ -321,7 +321,7 @@ class ArchiveProps(IntEnum):
     CREATOR_APP = 51  # kpidCreatorApp
     SECTOR_SIZE = 52  # kpidSectorSize
     POSIX_ATTRIB = 53  # kpidPosixAttrib
-    SYM_LINK = 54  # kpidSymLink
+    SYMLINK = 54  # kpidSymLink
     ERROR = 55  # kpidError
     TOTAL_SIZE = 56  # kpidTotalSize
     FREE_SPACE = 57  # kpidFreeSpace
@@ -358,7 +358,7 @@ class ArchiveProps(IntEnum):
     EMBEDDED_STUB_SIZE = 88  # kpidEmbeddedStubSize
     NT_REPARSE = 89  # kpidNtReparse
     HARD_LINK = 90  # kpidHardLink
-    I_NODE = 91  # kpidINode
+    INODE = 91  # kpidINode
     STREAM_ID = 92  # kpidStreamId
     READ_ONLY = 93  # kpidReadOnly
     OUT_NAME = 94  # kpidOutName
