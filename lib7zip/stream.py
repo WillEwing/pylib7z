@@ -25,8 +25,8 @@ class FileInStream(IUnknownImpl):
         IID_ISequentialInStream: "ISequentialInStream",
     }
 
-    def __init__(self, file: BinaryIO | PathLike) -> None:
-        if isinstance(file, PathLike):
+    def __init__(self, file: BinaryIO | PathLike | str) -> None:
+        if isinstance(file, (PathLike, str)):
             self.filelike: BinaryIO = open(file, "rb")
         else:
             self.filelike = file
@@ -66,8 +66,8 @@ class FileOutStream(IUnknownImpl):
         IID_ISequentialOutStream: "ISequentialOutStream",
     }
 
-    def __init__(self, file: BinaryIO | PathLike) -> None:
-        if isinstance(file, PathLike):
+    def __init__(self, file: BinaryIO | PathLike | str) -> None:
+        if isinstance(file, (PathLike, str)):
             self.filelike: BinaryIO = open(file, "wb")
         else:
             self.filelike = file
