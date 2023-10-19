@@ -2,6 +2,7 @@
 import io
 import os.path
 from functools import partial
+from weakref import ref
 
 from . import Format, dll7z, ffi, formats, log, max_sig_size, py7ziptypes
 from .cmpcodecsinfo import CompressCodecsInfo
@@ -199,26 +200,18 @@ class Archive:
 
 class ArchiveItem:
     def __init__(self, archive, index):
-        self.archive = archive
+        self.archive_ref = ref(archive)
         self.index = index
         self._contents = None
         self.password = None
 
     def extract(self, file, password=None):
-        password = password or self.password or self.archive.password
+        archive = self.archive_ref()
+        password = password or self.password or archive.password
 
         self.callback = callback = ArchiveExtractToStreamCallback(file, self.index, password)
         self.cb_inst = callback_inst = callback.instances[py7ziptypes.IID_IArchiveExtractCallback]
-        # indices = ffi.new('const uint32_t indices[]', [self.index])
-
-        # indices_p = C.calloc(1, ffi.sizeof('uint32_t'))
-        # indices = ffi.cast('uint32_t*', indices_p)
-        # indices[0] = self.index
-
-        log.debug("starting extract of %s!", self.path)
-        RNOK(self.archive.archive.vtable.Extract(self.archive.archive, ffi.NULL, 0xFFFFFFFF, 0, callback_inst))
-        log.debug("finished extract")
-        # C.free(indices_p)
+        RNOK(archive.archive.vtable.Extract(archive.archive, ffi.NULL, 0xFFFFFFFF, 0, callback_inst))
 
     @property
     def contents(self):
@@ -230,6 +223,9 @@ class ArchiveItem:
 
         return self._contents
 
-    def __getattr__(self, attr):
-        propid = getattr(py7ziptypes.ArchiveProps, attr)
-        return get_prop_val(partial(self.archive.itm_prop_fn, self.index, propid))
+    def __getattr__(self, attr: str):
+        archive = self.archive_ref()
+        if not attr.islower():
+            raise AttributeError()
+        propid = getattr(py7ziptypes.ArchiveProps, attr.upper())
+        return get_prop_val(partial(archive.itm_prop_fn, self.index, propid))

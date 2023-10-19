@@ -24,12 +24,12 @@ def tmp_dir(request):
     return path
 
 
-_IX = namedtuple("ArchiveItemEx", ("isdir", "crc", "contents"))
+_IX = namedtuple("ArchiveItemEx", ("is_dir", "crc", "contents"))
 
 
-def IX(isdir=False, crc=None, contents=""):
-    # return _IX(isdir, crc, contents.encode('utf8') if contents is not None else None)
-    return _IX(isdir, crc, contents)
+def IX(is_dir=False, crc=None, contents=""):
+    # return _IX(is_dir, crc, contents.encode('utf8') if contents is not None else None)
+    return _IX(is_dir, crc, contents)
 
 
 J = os.path.join
@@ -58,13 +58,13 @@ def test_complex():
                 log.warning("key %s not present", ex.args[0])
                 continue
 
-            assert item.isdir == md.isdir
+            assert item.is_dir == md.is_dir
             if md.crc is None:
                 assert item.crc is None
             else:
                 assert item.crc == md.crc
 
-            if not item.isdir:
+            if not item.is_dir:
                 assert item.contents.decode("utf-8") == md.contents
         logging.debug("done iterating archives")
 
