@@ -58,7 +58,7 @@ class Archive:
 
         # old_vtable = archive.vtable
         log.debug("opening archive")
-        maxCheckStartPosition = ffi.new("uint64_t*", 1 << 22)
+        maxCheckStartPosition = ffi.NULL  # ffi.new("uint64_t*", 1 << 22)
         RNOK(archive.vtable.Open(archive, stream_inst, maxCheckStartPosition, callback_inst))
         self.itm_prop_fn = partial(archive.vtable.GetProperty, archive)
         # log.debug('what now?')
