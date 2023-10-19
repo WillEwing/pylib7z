@@ -54,7 +54,7 @@ def test_complex():
             try:
                 md = COMPLEX_MD[item.path]
             except KeyError as ex:
-                log.warn("key %s not present", ex.args[0])
+                log.warning("key %s not present", ex.args[0])
                 continue
 
             assert item.isdir == md.isdir
