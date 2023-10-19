@@ -66,7 +66,7 @@ if "win" in sys.platform:
         aKey = OpenKey(HKEY_LOCAL_MACHINE, r"SOFTWARE\7-Zip", 0, KEY_READ)
         s7z_path = QueryValueEx(aKey, "Path")[0]
         dll_paths.append(os.path.join(s7z_path, "7z.dll"))
-    except WinError:
+    except WindowsError:
         log.warn("Could not find 7-zip installation info in registry.")
 
     if not dll_paths:
@@ -76,7 +76,7 @@ if "win" in sys.platform:
             dll_paths.append(maybe_lib7z_path)
 
     ole32 = ffi.dlopen("ole32")
-    free_propvariant = lambda x: ole32.PropVariantClear(x)
+    free_propvariant = lambda x: ole32.PropVariantClear(x)  # type: ignore
 
     # NOTE: Apparently, Python doesn't know what msvcrt it's using sometimes?
     libc_path = find_msvcrt() or find_library("ucrtbase")
@@ -98,20 +98,26 @@ else:
 
     libc_path = find_library("c")
 
-log.info("dll_paths: %r", dll_paths)
-dll7z = None
-for dll_path in dll_paths:
-    log.debug("trying path: %s", dll_path)
-    try:
-        dll7z = ffi.dlopen(dll_path)
-    except:
-        dll7z = None
-    else:
-        break
 
+def load_7z_dll():
+    dll7z = None
+    for dll_path in dll_paths:
+        log.debug("trying path: %s", dll_path)
+        try:
+            return ffi.dlopen(dll_path)
+        except:
+            pass
+    else:
+        raise RuntimeError("Could not find 7z.dll")
+
+
+dll7z = load_7z_dll()
 
 if dll7z is None:
     raise Exception("Could not find 7z.dll/7z.so")
+
+if libc_path is None:
+    raise Exception("Could not find C library. Somehow.")
 
 C = ffi.dlopen(libc_path)
 
@@ -164,11 +170,11 @@ class Format:
     name: str
     classid: GUID
     extensions: tuple[str]
-    signatures: bytes | tuple[bytes]
+    signatures: tuple[bytes, ...]
     signature_offset: int
 
 
-def parse_multi_signature(raw_msig: bytes) -> tuple[bytes]:
+def parse_multi_signature(raw_msig: bytes) -> tuple[bytes, ...]:
     pos = 0
     sigs = []
     while pos < len(raw_msig):
