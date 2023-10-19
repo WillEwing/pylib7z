@@ -260,4 +260,4 @@ formats = get_formats()
 max_sig_size = get_max_signature_size()
 methods = get_methods()
 
-from .archive import Archive  # noqa
+from .archive import Archive, ArchiveItem  # noqa
