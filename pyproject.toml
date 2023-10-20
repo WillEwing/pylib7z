@@ -1,12 +1,12 @@
 [build-system]
-requires = ['setuptools', 'setuptools-scm']
+requires = ['setuptools', 'setuptools-scm', 'wheel', 'cffi']
 build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'lib7zip'
 authors = [
-    { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
     { name = "William Ewing", email = "will.ewing.iv@gmail.com" },
+    { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
 ]
 description = "Python bindings to the 7-Zip Library"
 license = { text = "BSD" }
@@ -17,6 +17,14 @@ dependencies = ["cffi"]
 
 classifiers = ["Programming Language :: Python :: 3"]
 dynamic = ["version"]
+
+
+
+
+
+
+
+
 
 [tool.black]
 max-line-length = 160
