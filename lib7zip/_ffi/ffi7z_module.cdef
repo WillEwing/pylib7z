@@ -1,0 +1,6 @@
+HRESULT InitModule(const wchar_t *lib7zip_path);
+HRESULT CreateObject(const GUID *clsid, const GUID *iid, void **out_object);
+HRESULT GetNumberOfFormats(uint32_t *num_formats);
+HRESULT GetHandlerProperty2(uint32_t index, PROPID prop_id, PROPVARIANT *value);
+HRESULT GetNumberOfMethods(uint32_t *num_methods);
+HRESULT GetMethodProperty(uint32_t index, PROPID prop_id, PROPVARIANT *value);

@@ -1,0 +1,61 @@
+
+typedef int PROPID;
+
+typedef uint32_t HRESULT;
+
+typedef uint16_t VARTYPE;
+
+typedef struct FILETIMEtag {
+	uint32_t dwLowDateTime;
+	uint32_t dwHighDateTime;
+} FILETIME;
+
+typedef struct GUIDtag {
+  unsigned long  Data1;
+  unsigned short Data2;
+  unsigned short Data3;
+  unsigned char  Data4[8];
+} GUID;
+
+typedef union _LARGE_INTEGER {
+  struct {
+    DWORD LowPart;
+    LONG  HighPart;
+  };
+  LONGLONG QuadPart;
+} LARGE_INTEGER;
+
+typedef union _ULARGE_INTEGER {
+  struct {
+    DWORD LowPart;
+    DWORD HighPart;
+  };
+  ULONGLONG QuadPart;
+} ULARGE_INTEGER;
+
+typedef struct PROPVARIANTtag {
+    VARTYPE     vt;
+    uint16_t    wReserved1;
+    uint16_t    wReserved2;
+    uint16_t    wReserved3;
+    union {
+        char              cVal;
+        uint8_t           bVal;
+        int16_t           iVal;
+        uint16_t          uiVal;
+        int32_t           lVal;
+        uint32_t          ulVal;
+        float             fltVal;
+        double            dblVal;
+        char*             pcVal;
+        wchar_t*          bstrVal;
+        LARGE_INTEGER     hVal;
+        ULARGE_INTEGER    uhVal;
+        GUID*             puuid;
+        FILETIME          filetime;
+    };
+} PROPVARIANT;
+
+PROPVARIANT* CreatePropVariant();
+
+void DeletePropVariant(PROPVARIANT* pvar);
