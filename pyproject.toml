@@ -18,13 +18,8 @@ dependencies = ["cffi"]
 classifiers = ["Programming Language :: Python :: 3"]
 dynamic = ["version"]
 
-
-
-
-
-
-
-
+[tool.setuptools.packages.find]
+exclude = ["docs*", "tests*", "what*"]
 
 [tool.black]
 max-line-length = 160

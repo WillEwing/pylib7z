@@ -11,7 +11,7 @@ typedef struct FFI7Z_IUnknown_tag {
 
 typedef struct FFI7Z_PyIUnknown_tag {
     FFI7Z_IUnknown_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIUnknown;
 
 typedef struct FFI7Z_ISequentialInStream_vtable_tag {
@@ -27,7 +27,7 @@ typedef struct FFI7Z_ISequentialInStream_tag {
 
 typedef struct FFI7Z_PyISequentialInStream_tag {
     FFI7Z_ISequentialInStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISequentialInStream;
 
 typedef struct FFI7Z_IInStream_vtable_tag {
@@ -44,7 +44,7 @@ typedef struct FFI7Z_IInStream_tag {
 
 typedef struct FFI7Z_PyIInStream_tag {
     FFI7Z_IInStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIInStream;
 
 typedef struct FFI7Z_ISequentialOutStream_vtable_tag {
@@ -60,7 +60,7 @@ typedef struct FFI7Z_ISequentialOutStream_tag {
 
 typedef struct FFI7Z_PyISequentialOutStream_tag {
     FFI7Z_ISequentialOutStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISequentialOutStream;
 
 typedef struct FFI7Z_IOutStream_vtable_tag {
@@ -77,7 +77,7 @@ typedef struct FFI7Z_IOutStream_tag {
 
 typedef struct FFI7Z_PyIOutStream_tag {
     FFI7Z_IOutStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIOutStream;
 
 typedef struct FFI7Z_IProgress_vtable_tag {
@@ -94,7 +94,7 @@ typedef struct FFI7Z_IProgress_tag {
 
 typedef struct FFI7Z_PyIProgress_tag {
     FFI7Z_IProgress_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIProgress;
 
 typedef struct FFI7Z_IArchiveExtractCallback_vtable_tag {
@@ -103,7 +103,7 @@ typedef struct FFI7Z_IArchiveExtractCallback_vtable_tag {
     uint32_t (WINAPI *Release)(void* self);
     HRESULT (WINAPI *SetTotal)(void* self, uint64_t total);
     HRESULT (WINAPI *SetCompleted)(void* self, const uint64_t * complete_value);
-    HRESULT (WINAPI *GetStream)(void* self, uint32_t index, FFI7Z_ISequentialOutStream * out_stream, int32_t ask_extract_mode);
+    HRESULT (WINAPI *GetStream)(void* self, uint32_t index, FFI7Z_ISequentialOutStream ** out_stream, int32_t ask_extract_mode);
     HRESULT (WINAPI *PrepareOperation)(void* self, int32_t ask_extract_mode);
     HRESULT (WINAPI *SetOperationResult)(void* self, int32_t op_result);
 } FFI7Z_IArchiveExtractCallback_vtable;
@@ -114,7 +114,7 @@ typedef struct FFI7Z_IArchiveExtractCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveExtractCallback_tag {
     FFI7Z_IArchiveExtractCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveExtractCallback;
 
 typedef struct FFI7Z_IArchiveOpenCallback_vtable_tag {
@@ -131,7 +131,7 @@ typedef struct FFI7Z_IArchiveOpenCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenCallback_tag {
     FFI7Z_IArchiveOpenCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenCallback;
 
 typedef struct FFI7Z_IArchiveOpenSetSubArchiveName_vtable_tag {
@@ -147,7 +147,7 @@ typedef struct FFI7Z_IArchiveOpenSetSubArchiveName_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenSetSubArchiveName_tag {
     FFI7Z_IArchiveOpenSetSubArchiveName_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenSetSubArchiveName;
 
 typedef struct FFI7Z_IArchiveOpenVolumeCallback_vtable_tag {
@@ -164,7 +164,7 @@ typedef struct FFI7Z_IArchiveOpenVolumeCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenVolumeCallback_tag {
     FFI7Z_IArchiveOpenVolumeCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenVolumeCallback;
 
 typedef struct FFI7Z_ICompressCodecsInfo_vtable_tag {
@@ -183,7 +183,7 @@ typedef struct FFI7Z_ICompressCodecsInfo_tag {
 
 typedef struct FFI7Z_PyICompressCodecsInfo_tag {
     FFI7Z_ICompressCodecsInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICompressCodecsInfo;
 
 typedef struct FFI7Z_ICompressProgressInfo_vtable_tag {
@@ -199,7 +199,7 @@ typedef struct FFI7Z_ICompressProgressInfo_tag {
 
 typedef struct FFI7Z_PyICompressProgressInfo_tag {
     FFI7Z_ICompressProgressInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICompressProgressInfo;
 
 typedef struct FFI7Z_ICryptoGetTextPassword_vtable_tag {
@@ -215,7 +215,7 @@ typedef struct FFI7Z_ICryptoGetTextPassword_tag {
 
 typedef struct FFI7Z_PyICryptoGetTextPassword_tag {
     FFI7Z_ICryptoGetTextPassword_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICryptoGetTextPassword;
 
 typedef struct FFI7Z_ICryptoGetTextPassword2_vtable_tag {
@@ -231,7 +231,7 @@ typedef struct FFI7Z_ICryptoGetTextPassword2_tag {
 
 typedef struct FFI7Z_PyICryptoGetTextPassword2_tag {
     FFI7Z_ICryptoGetTextPassword2_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICryptoGetTextPassword2;
 
 typedef struct FFI7Z_IInArchive_vtable_tag {
@@ -256,7 +256,7 @@ typedef struct FFI7Z_IInArchive_tag {
 
 typedef struct FFI7Z_PyIInArchive_tag {
     FFI7Z_IInArchive_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIInArchive;
 
 typedef struct FFI7Z_ISetCompressCodecsInfo_vtable_tag {
@@ -272,56 +272,25 @@ typedef struct FFI7Z_ISetCompressCodecsInfo_tag {
 
 typedef struct FFI7Z_PyISetCompressCodecsInfo_tag {
     FFI7Z_ISetCompressCodecsInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISetCompressCodecsInfo;
 
 
-const GUID FFI7Z_IID_IUnknown;
 const FFI7Z_IUnknown_vtable FFI7Z_PyIUnknown_vtable;
-
-const GUID FFI7Z_IID_ISequentialInStream;
 const FFI7Z_ISequentialInStream_vtable FFI7Z_PyISequentialInStream_vtable;
-
-const GUID FFI7Z_IID_IInStream;
 const FFI7Z_IInStream_vtable FFI7Z_PyIInStream_vtable;
-
-const GUID FFI7Z_IID_ISequentialOutStream;
 const FFI7Z_ISequentialOutStream_vtable FFI7Z_PyISequentialOutStream_vtable;
-
-const GUID FFI7Z_IID_IOutStream;
 const FFI7Z_IOutStream_vtable FFI7Z_PyIOutStream_vtable;
-
-const GUID FFI7Z_IID_IProgress;
 const FFI7Z_IProgress_vtable FFI7Z_PyIProgress_vtable;
-
-const GUID FFI7Z_IID_IArchiveExtractCallback;
 const FFI7Z_IArchiveExtractCallback_vtable FFI7Z_PyIArchiveExtractCallback_vtable;
-
-const GUID FFI7Z_IID_IArchiveOpenCallback;
 const FFI7Z_IArchiveOpenCallback_vtable FFI7Z_PyIArchiveOpenCallback_vtable;
-
-const GUID FFI7Z_IID_IArchiveOpenSetSubArchiveName;
 const FFI7Z_IArchiveOpenSetSubArchiveName_vtable FFI7Z_PyIArchiveOpenSetSubArchiveName_vtable;
-
-const GUID FFI7Z_IID_IArchiveOpenVolumeCallback;
 const FFI7Z_IArchiveOpenVolumeCallback_vtable FFI7Z_PyIArchiveOpenVolumeCallback_vtable;
-
-const GUID FFI7Z_IID_ICompressCodecsInfo;
 const FFI7Z_ICompressCodecsInfo_vtable FFI7Z_PyICompressCodecsInfo_vtable;
-
-const GUID FFI7Z_IID_ICompressProgressInfo;
 const FFI7Z_ICompressProgressInfo_vtable FFI7Z_PyICompressProgressInfo_vtable;
-
-const GUID FFI7Z_IID_ICryptoGetTextPassword;
 const FFI7Z_ICryptoGetTextPassword_vtable FFI7Z_PyICryptoGetTextPassword_vtable;
-
-const GUID FFI7Z_IID_ICryptoGetTextPassword2;
 const FFI7Z_ICryptoGetTextPassword2_vtable FFI7Z_PyICryptoGetTextPassword2_vtable;
-
-const GUID FFI7Z_IID_IInArchive;
 const FFI7Z_IInArchive_vtable FFI7Z_PyIInArchive_vtable;
-
-const GUID FFI7Z_IID_ISetCompressCodecsInfo;
 const FFI7Z_ISetCompressCodecsInfo_vtable FFI7Z_PyISetCompressCodecsInfo_vtable;
 
 extern "Python" {
@@ -334,7 +303,7 @@ HRESULT WINAPI FFI7Z_Py_ISequentialOutStream_Write(void* self, const void * data
 HRESULT WINAPI FFI7Z_Py_IOutStream_Seek(void* self, int64_t offset, uint32_t seekOrigin, uint64_t * newPosition);
 HRESULT WINAPI FFI7Z_Py_IProgress_SetTotal(void* self, uint64_t total);
 HRESULT WINAPI FFI7Z_Py_IProgress_SetCompleted(void* self, const uint64_t * complete_value);
-HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_GetStream(void* self, uint32_t index, FFI7Z_ISequentialOutStream * out_stream, int32_t ask_extract_mode);
+HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_GetStream(void* self, uint32_t index, FFI7Z_ISequentialOutStream ** out_stream, int32_t ask_extract_mode);
 HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_PrepareOperation(void* self, int32_t ask_extract_mode);
 HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_SetOperationResult(void* self, int32_t op_result);
 HRESULT WINAPI FFI7Z_Py_IArchiveOpenCallback_SetTotal(void* self, const uint64_t * files, const uint64_t * bytes);

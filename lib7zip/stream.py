@@ -1,96 +1,90 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import logging
-from os import PathLike
+
 from typing import BinaryIO
 
-from . import ffi, wintypes
-from .py7ziptypes import (
+from .ffi7z import (
+    HRESULT,
     IID_IInStream,
     IID_IOutStream,
     IID_ISequentialInStream,
     IID_ISequentialOutStream,
+    IUnknownImpl,
+    ffi,
 )
-from .simplecom import IUnknownImpl
-from .winhelpers import guidp2uuid
-from .wintypes import HRESULT
-
-log = logging.getLogger(__name__)
 
 
-class FileInStream(IUnknownImpl):
+class SimpleInStream(IUnknownImpl):
     """
-    Implementation of IInStream and ISequentialInStream on top of python file-like objects
-
-    Creator responsible for closing the file-like objects.
+    Implementation of IInStream wrapping a Python BinaryIO object.
     """
 
-    GUIDS = {
-        IID_IInStream: "IInStream",
-        IID_ISequentialInStream: "ISequentialInStream",
-    }
+    IIDS = (
+        IID_ISequentialInStream,
+        IID_IInStream,
+    )
 
-    def __init__(self, file: BinaryIO | PathLike | str) -> None:
-        if isinstance(file, (PathLike, str)):
-            self.filelike: BinaryIO = open(file, "rb")
-        else:
-            self.filelike = file
+    def __init__(self, stream):
+        self.stream = stream
         super().__init__()
 
-    def Read(self, me, data, size, processed_size):
-        log.debug("Read size=%d", size)
-        buf = self.filelike.read(size)
-        psize = len(buf)
-
-        if processed_size != ffi.NULL:
-            processed_size[0] = psize
-
-        data[0:psize] = buf[0:psize]
-        log.debug("processed size: {}".format(psize))
-
+    def Read(self, data, bytes_to_read, bytes_read_ptr):
+        buffer = ffi.buffer(data, bytes_to_read)
+        bytes_read = self.stream.readinto(buffer)
+        if bytes_read_ptr != ffi.NULL:
+            bytes_read_ptr[0] = bytes_read
         return HRESULT.S_OK.value
 
-    def Seek(self, me, offset, origin, newposition):
-        log.debug("Seek offset=%d; origin=%d", offset, origin)
-        newpos = self.filelike.seek(offset, origin)
-        if newposition != ffi.NULL:
-            newposition[0] = newpos
-        log.debug("new position: %d", newpos)
+    def Seek(self, offset, origin, position_ptr):
+        position = self.stream.seek(offset, origin)
+        if position_ptr != ffi.NULL:
+            position_ptr[0] = position
         return HRESULT.S_OK.value
 
 
-class FileOutStream(IUnknownImpl):
+class FileInStream(SimpleInStream):
     """
-    Implementation of IOutStream and ISequentialOutStream on top of Python file-like objects.
-
-    Creator is responsible for flushing/closing the file-like object
+    Implementation of IInStream against a file on-disk.
     """
 
-    GUIDS = {
-        IID_IOutStream: "IOutStream",
-        IID_ISequentialOutStream: "ISequentialOutStream",
-    }
+    def __init__(self, filename):
+        stream = open(filename, "rb")
+        super().__init__(stream)
 
-    def __init__(self, file: BinaryIO | PathLike | str) -> None:
-        if isinstance(file, (PathLike, str)):
-            self.filelike: BinaryIO = open(file, "wb")
-        else:
-            self.filelike = file
+
+class SimpleOutStream(IUnknownImpl):
+    """
+    Implementation of IOutStream wrapping a Python BinaryIO object.
+    """
+
+    IIDS = (
+        IID_ISequentialOutStream,
+        IID_IOutStream,
+    )
+
+    def __init__(self, stream):
+        self.stream = stream
         super().__init__()
 
-    def Write(self, me, data, size, processed_size):
-        log.debug("Write %d", size)
-        data_arr = ffi.cast("uint8_t*", data)
-        buf = bytes(data_arr[0:size])
-        # log.debug('data: %s' % buf.decode('ascii'))
-        _processed_size = self.filelike.write(buf)
-        processed_size[0] = _processed_size
-        log.debug("processed_size: %d", _processed_size)
+    def Write(self, data, bytes_to_write, bytes_written_ptr):
+        buffer = ffi.buffer(data, bytes_to_write)
+        bytes_written = self.stream.write(buffer)
+        if bytes_written_ptr != ffi.NULL:
+            bytes_written_ptr[0] = bytes_written
         return HRESULT.S_OK.value
 
-    def Seek(self, me, offset, origin, newposition):
-        log.debug("Seek offset=%d; origin=%d", offset, origin)
-        newpos = self.filelike.seek(offset, origin)
-        if newposition != ffi.NULL:
-            newposition[0] = newpos
-        log.debug("new position: %d", newpos)
+    def Seek(self, offset, origin, position_ptr):
+        position = self.stream.seek(offset, origin)
+        if position_ptr != ffi.NULL:
+            position_ptr[0] = position
         return HRESULT.S_OK.value
+
+
+class FileOutStream(SimpleOutStream):
+    """
+    Implementation of IOutStream against a file on-disk.
+    """
+
+    def __init__(self, filename):
+        stream = open(filename, "wb")
+        super().__init__(stream)

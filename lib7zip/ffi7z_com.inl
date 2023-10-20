@@ -11,7 +11,7 @@ typedef struct FFI7Z_IUnknown_tag {
 
 typedef struct FFI7Z_PyIUnknown_tag {
     FFI7Z_IUnknown_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIUnknown;
 
 typedef struct FFI7Z_ISequentialInStream_vtable_tag {
@@ -27,7 +27,7 @@ typedef struct FFI7Z_ISequentialInStream_tag {
 
 typedef struct FFI7Z_PyISequentialInStream_tag {
     FFI7Z_ISequentialInStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISequentialInStream;
 
 typedef struct FFI7Z_IInStream_vtable_tag {
@@ -44,7 +44,7 @@ typedef struct FFI7Z_IInStream_tag {
 
 typedef struct FFI7Z_PyIInStream_tag {
     FFI7Z_IInStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIInStream;
 
 typedef struct FFI7Z_ISequentialOutStream_vtable_tag {
@@ -60,7 +60,7 @@ typedef struct FFI7Z_ISequentialOutStream_tag {
 
 typedef struct FFI7Z_PyISequentialOutStream_tag {
     FFI7Z_ISequentialOutStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISequentialOutStream;
 
 typedef struct FFI7Z_IOutStream_vtable_tag {
@@ -77,7 +77,7 @@ typedef struct FFI7Z_IOutStream_tag {
 
 typedef struct FFI7Z_PyIOutStream_tag {
     FFI7Z_IOutStream_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIOutStream;
 
 typedef struct FFI7Z_IProgress_vtable_tag {
@@ -94,7 +94,7 @@ typedef struct FFI7Z_IProgress_tag {
 
 typedef struct FFI7Z_PyIProgress_tag {
     FFI7Z_IProgress_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIProgress;
 
 typedef struct FFI7Z_IArchiveExtractCallback_vtable_tag {
@@ -103,7 +103,7 @@ typedef struct FFI7Z_IArchiveExtractCallback_vtable_tag {
     uint32_t (WINAPI *Release)(void* self);
     HRESULT (WINAPI *SetTotal)(void* self, uint64_t total);
     HRESULT (WINAPI *SetCompleted)(void* self, const uint64_t * complete_value);
-    HRESULT (WINAPI *GetStream)(void* self, uint32_t index, FFI7Z_ISequentialOutStream * out_stream, int32_t ask_extract_mode);
+    HRESULT (WINAPI *GetStream)(void* self, uint32_t index, FFI7Z_ISequentialOutStream ** out_stream, int32_t ask_extract_mode);
     HRESULT (WINAPI *PrepareOperation)(void* self, int32_t ask_extract_mode);
     HRESULT (WINAPI *SetOperationResult)(void* self, int32_t op_result);
 } FFI7Z_IArchiveExtractCallback_vtable;
@@ -114,7 +114,7 @@ typedef struct FFI7Z_IArchiveExtractCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveExtractCallback_tag {
     FFI7Z_IArchiveExtractCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveExtractCallback;
 
 typedef struct FFI7Z_IArchiveOpenCallback_vtable_tag {
@@ -131,7 +131,7 @@ typedef struct FFI7Z_IArchiveOpenCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenCallback_tag {
     FFI7Z_IArchiveOpenCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenCallback;
 
 typedef struct FFI7Z_IArchiveOpenSetSubArchiveName_vtable_tag {
@@ -147,7 +147,7 @@ typedef struct FFI7Z_IArchiveOpenSetSubArchiveName_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenSetSubArchiveName_tag {
     FFI7Z_IArchiveOpenSetSubArchiveName_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenSetSubArchiveName;
 
 typedef struct FFI7Z_IArchiveOpenVolumeCallback_vtable_tag {
@@ -164,7 +164,7 @@ typedef struct FFI7Z_IArchiveOpenVolumeCallback_tag {
 
 typedef struct FFI7Z_PyIArchiveOpenVolumeCallback_tag {
     FFI7Z_IArchiveOpenVolumeCallback_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenVolumeCallback;
 
 typedef struct FFI7Z_ICompressCodecsInfo_vtable_tag {
@@ -183,7 +183,7 @@ typedef struct FFI7Z_ICompressCodecsInfo_tag {
 
 typedef struct FFI7Z_PyICompressCodecsInfo_tag {
     FFI7Z_ICompressCodecsInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICompressCodecsInfo;
 
 typedef struct FFI7Z_ICompressProgressInfo_vtable_tag {
@@ -199,7 +199,7 @@ typedef struct FFI7Z_ICompressProgressInfo_tag {
 
 typedef struct FFI7Z_PyICompressProgressInfo_tag {
     FFI7Z_ICompressProgressInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICompressProgressInfo;
 
 typedef struct FFI7Z_ICryptoGetTextPassword_vtable_tag {
@@ -215,7 +215,7 @@ typedef struct FFI7Z_ICryptoGetTextPassword_tag {
 
 typedef struct FFI7Z_PyICryptoGetTextPassword_tag {
     FFI7Z_ICryptoGetTextPassword_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICryptoGetTextPassword;
 
 typedef struct FFI7Z_ICryptoGetTextPassword2_vtable_tag {
@@ -231,7 +231,7 @@ typedef struct FFI7Z_ICryptoGetTextPassword2_tag {
 
 typedef struct FFI7Z_PyICryptoGetTextPassword2_tag {
     FFI7Z_ICryptoGetTextPassword2_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyICryptoGetTextPassword2;
 
 typedef struct FFI7Z_IInArchive_vtable_tag {
@@ -256,7 +256,7 @@ typedef struct FFI7Z_IInArchive_tag {
 
 typedef struct FFI7Z_PyIInArchive_tag {
     FFI7Z_IInArchive_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyIInArchive;
 
 typedef struct FFI7Z_ISetCompressCodecsInfo_vtable_tag {
@@ -272,7 +272,7 @@ typedef struct FFI7Z_ISetCompressCodecsInfo_tag {
 
 typedef struct FFI7Z_PyISetCompressCodecsInfo_tag {
     FFI7Z_ISetCompressCodecsInfo_vtable * vtable;
-    void * pyojbect_tag;
+    void * pyobject_handle;
 } FFI7Z_PyISetCompressCodecsInfo;
 
 
@@ -285,7 +285,7 @@ HRESULT WINAPI FFI7Z_Py_ISequentialOutStream_Write(void* self, const void * data
 HRESULT WINAPI FFI7Z_Py_IOutStream_Seek(void* self, int64_t offset, uint32_t seekOrigin, uint64_t * newPosition);
 HRESULT WINAPI FFI7Z_Py_IProgress_SetTotal(void* self, uint64_t total);
 HRESULT WINAPI FFI7Z_Py_IProgress_SetCompleted(void* self, const uint64_t * complete_value);
-HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_GetStream(void* self, uint32_t index, FFI7Z_ISequentialOutStream * out_stream, int32_t ask_extract_mode);
+HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_GetStream(void* self, uint32_t index, FFI7Z_ISequentialOutStream ** out_stream, int32_t ask_extract_mode);
 HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_PrepareOperation(void* self, int32_t ask_extract_mode);
 HRESULT WINAPI FFI7Z_Py_IArchiveExtractCallback_SetOperationResult(void* self, int32_t op_result);
 HRESULT WINAPI FFI7Z_Py_IArchiveOpenCallback_SetTotal(void* self, const uint64_t * files, const uint64_t * bytes);
@@ -312,15 +312,11 @@ HRESULT WINAPI FFI7Z_Py_IInArchive_GetNumberOfArchiveProperties(void* self, uint
 HRESULT WINAPI FFI7Z_Py_IInArchive_GetArchivePropertyInfo(void* self, uint32_t index, wchar_t ** name, PROPID * prop_id, VARTYPE * var_type);
 HRESULT WINAPI FFI7Z_Py_ISetCompressCodecsInfo_SetCompressCodecsInfo(void* self, FFI7Z_ICompressCodecsInfo * compress_codecs_info);
 
-const GUID FFI7Z_IID_IUnknown = { 0x00000000, 0x0000, 0x0000, { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
-
 const FFI7Z_IUnknown_vtable FFI7Z_PyIUnknown_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
   .Release = FFI7Z_Py_IUnknown_Release,
 };
-
-const GUID FFI7Z_IID_ISequentialInStream = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00 } };
 
 const FFI7Z_ISequentialInStream_vtable FFI7Z_PyISequentialInStream_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -328,8 +324,6 @@ const FFI7Z_ISequentialInStream_vtable FFI7Z_PyISequentialInStream_vtable = {
   .Release = FFI7Z_Py_IUnknown_Release,
   .Read = FFI7Z_Py_ISequentialInStream_Read,
 };
-
-const GUID FFI7Z_IID_IInStream = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00 } };
 
 const FFI7Z_IInStream_vtable FFI7Z_PyIInStream_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -339,16 +333,12 @@ const FFI7Z_IInStream_vtable FFI7Z_PyIInStream_vtable = {
   .Seek = FFI7Z_Py_IInStream_Seek,
 };
 
-const GUID FFI7Z_IID_ISequentialOutStream = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x03, 0x00, 0x02, 0x00, 0x00 } };
-
 const FFI7Z_ISequentialOutStream_vtable FFI7Z_PyISequentialOutStream_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
   .Release = FFI7Z_Py_IUnknown_Release,
   .Write = FFI7Z_Py_ISequentialOutStream_Write,
 };
-
-const GUID FFI7Z_IID_IOutStream = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x03, 0x00, 0x05, 0x00, 0x00 } };
 
 const FFI7Z_IOutStream_vtable FFI7Z_PyIOutStream_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -358,8 +348,6 @@ const FFI7Z_IOutStream_vtable FFI7Z_PyIOutStream_vtable = {
   .Seek = FFI7Z_Py_IOutStream_Seek,
 };
 
-const GUID FFI7Z_IID_IProgress = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00 } };
-
 const FFI7Z_IProgress_vtable FFI7Z_PyIProgress_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
@@ -367,8 +355,6 @@ const FFI7Z_IProgress_vtable FFI7Z_PyIProgress_vtable = {
   .SetTotal = FFI7Z_Py_IProgress_SetTotal,
   .SetCompleted = FFI7Z_Py_IProgress_SetCompleted,
 };
-
-const GUID FFI7Z_IID_IArchiveExtractCallback = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x06, 0x00, 0x20, 0x00, 0x00 } };
 
 const FFI7Z_IArchiveExtractCallback_vtable FFI7Z_PyIArchiveExtractCallback_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -381,8 +367,6 @@ const FFI7Z_IArchiveExtractCallback_vtable FFI7Z_PyIArchiveExtractCallback_vtabl
   .SetOperationResult = FFI7Z_Py_IArchiveExtractCallback_SetOperationResult,
 };
 
-const GUID FFI7Z_IID_IArchiveOpenCallback = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x06, 0x00, 0x10, 0x00, 0x00 } };
-
 const FFI7Z_IArchiveOpenCallback_vtable FFI7Z_PyIArchiveOpenCallback_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
@@ -391,16 +375,12 @@ const FFI7Z_IArchiveOpenCallback_vtable FFI7Z_PyIArchiveOpenCallback_vtable = {
   .SetCompleted = FFI7Z_Py_IArchiveOpenCallback_SetCompleted,
 };
 
-const GUID FFI7Z_IID_IArchiveOpenSetSubArchiveName = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x06, 0x00, 0x50, 0x00, 0x00 } };
-
 const FFI7Z_IArchiveOpenSetSubArchiveName_vtable FFI7Z_PyIArchiveOpenSetSubArchiveName_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
   .Release = FFI7Z_Py_IUnknown_Release,
   .SetSubArchiveName = FFI7Z_Py_IArchiveOpenSetSubArchiveName_SetSubArchiveName,
 };
-
-const GUID FFI7Z_IID_IArchiveOpenVolumeCallback = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x06, 0x00, 0x30, 0x00, 0x00 } };
 
 const FFI7Z_IArchiveOpenVolumeCallback_vtable FFI7Z_PyIArchiveOpenVolumeCallback_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -409,8 +389,6 @@ const FFI7Z_IArchiveOpenVolumeCallback_vtable FFI7Z_PyIArchiveOpenVolumeCallback
   .GetProperty = FFI7Z_Py_IArchiveOpenVolumeCallback_GetProperty,
   .GetStream = FFI7Z_Py_IArchiveOpenVolumeCallback_GetStream,
 };
-
-const GUID FFI7Z_IID_ICompressCodecsInfo = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x04, 0x00, 0x60, 0x00, 0x00 } };
 
 const FFI7Z_ICompressCodecsInfo_vtable FFI7Z_PyICompressCodecsInfo_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -422,16 +400,12 @@ const FFI7Z_ICompressCodecsInfo_vtable FFI7Z_PyICompressCodecsInfo_vtable = {
   .CreateEncoder = FFI7Z_Py_ICompressCodecsInfo_CreateEncoder,
 };
 
-const GUID FFI7Z_IID_ICompressProgressInfo = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00 } };
-
 const FFI7Z_ICompressProgressInfo_vtable FFI7Z_PyICompressProgressInfo_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
   .Release = FFI7Z_Py_IUnknown_Release,
   .SetRatioInfo = FFI7Z_Py_ICompressProgressInfo_SetRatioInfo,
 };
-
-const GUID FFI7Z_IID_ICryptoGetTextPassword = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x05, 0x00, 0x10, 0x00, 0x00 } };
 
 const FFI7Z_ICryptoGetTextPassword_vtable FFI7Z_PyICryptoGetTextPassword_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -440,16 +414,12 @@ const FFI7Z_ICryptoGetTextPassword_vtable FFI7Z_PyICryptoGetTextPassword_vtable 
   .CryptoGetTextPassword = FFI7Z_Py_ICryptoGetTextPassword_CryptoGetTextPassword,
 };
 
-const GUID FFI7Z_IID_ICryptoGetTextPassword2 = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x05, 0x00, 0x11, 0x00, 0x00 } };
-
 const FFI7Z_ICryptoGetTextPassword2_vtable FFI7Z_PyICryptoGetTextPassword2_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
   .Release = FFI7Z_Py_IUnknown_Release,
   .CryptoGetTextPassword2 = FFI7Z_Py_ICryptoGetTextPassword2_CryptoGetTextPassword2,
 };
-
-const GUID FFI7Z_IID_IInArchive = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x06, 0x00, 0x60, 0x00, 0x00 } };
 
 const FFI7Z_IInArchive_vtable FFI7Z_PyIInArchive_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -466,8 +436,6 @@ const FFI7Z_IInArchive_vtable FFI7Z_PyIInArchive_vtable = {
   .GetNumberOfArchiveProperties = FFI7Z_Py_IInArchive_GetNumberOfArchiveProperties,
   .GetArchivePropertyInfo = FFI7Z_Py_IInArchive_GetArchivePropertyInfo,
 };
-
-const GUID FFI7Z_IID_ISetCompressCodecsInfo = { 0x23170f69, 0x40c1, 0x278a, { 0x00, 0x00, 0x00, 0x40, 0x00, 0x61, 0x00, 0x00 } };
 
 const FFI7Z_ISetCompressCodecsInfo_vtable FFI7Z_PyISetCompressCodecsInfo_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,

@@ -1,178 +1,110 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import os.path
 
-from . import C, ffi, log, py7ziptypes
-from .py7ziptypes import (
+from pathlib import Path
+
+from .ffi7z import (
+    HRESULT,
     AskMode,
     IID_IArchiveExtractCallback,
     IID_ICompressProgressInfo,
     IID_ICryptoGetTextPassword,
     IID_ICryptoGetTextPassword2,
     IID_ISequentialOutStream,
-    OperationResult,
+    IUnknownImpl,
+    ffi,
 )
-from .simplecom import IUnknownImpl
-from .stream import FileOutStream
-from .wintypes import HRESULT
+from .stream import FileOutStream, SimpleOutStream
 
 
 class ArchiveExtractCallback(IUnknownImpl):
-    """
-    Base class for extract callbacks
-    """
+    """Base class for extract callbacks."""
 
-    GUIDS = {
-        IID_IArchiveExtractCallback: "IArchiveExtractCallback",
-        IID_ICryptoGetTextPassword: "ICryptoGetTextPassword",
-        IID_ICryptoGetTextPassword2: "ICryptoGetTextPassword2",
-        IID_ICompressProgressInfo: "ICompressProgressInfo",
-    }
+    IIDS = (
+        IID_IArchiveExtractCallback,
+        IID_ICryptoGetTextPassword,
+        IID_ICryptoGetTextPassword2,
+        IID_ICompressProgressInfo,
+    )
 
-    def __init__(self, password=""):
-        # self.out_file = FileOutStream(file)
-        # self.password = ffi.new('char[]', (password or '').encode('ascii'))
-        self.password = ffi.new("wchar_t[]", password or "")
-        # password = password or ''
-        """
-		self._password = ffi.gc(C.malloc(ffi.sizeof('wchar_t') * len(password) + 1), C.free)
-		self.password = ffi.cast('wchar_t*', self._password)
-		self.password[0:len(password)] = password
-		self.password[len(password)] = '\0'
-		"""
-
+    def __init__(self, password):
+        self.password = password
+        self.password_buf = ffi.new("wchar_t[]", password) if password else ffi.NULL
         super().__init__()
 
-    def cleanup(self):
-        pass
-
-    # HRESULT(*SetTotal)(void* self, uint64_t total);
-    def SetTotal(self, me, total):
-        log.info("SetTotal %d" % total)
+    def SetTotal(self, total):
         return HRESULT.S_OK.value
 
-    # HRESULT(*SetCompleted)(void* self, const uint64_t *completeValue);
-    def SetCompleted(self, me, completeValue):
-        if completeValue:
-            log.info("SetCompleted: %d" % int(completeValue[0]))
-        else:
-            log.info("SetCompleted: NULL")
+    def SetCompleted(self, complete_value):
         return HRESULT.S_OK.value
 
-    # HRESULT(*GetStream)(void* self, uint32_t index, ISequentialOutStream **outStream,  int32_t askExtractMode);
-    def GetStream(self, me, index, outStream, askExtractMode):
-        log.debug("GetStream")
-        raise NotImplemented
-
-    # HRESULT(*PrepareOperation)(void* self, int32_t askExtractMode);
-    def PrepareOperation(self, me, askExtractMode):
-        log.info("PrepareOperation, askExtractMode=%d" % int(askExtractMode))
+    def SetRatioInfo(self, in_size, out_size):
         return HRESULT.S_OK.value
 
-    # HRESULT(*SetOperationResult)(void* self, int32_t resultEOperationResult);
-    def SetOperationResult(self, me, operational_result):
-        res = OperationResult(int(operational_result))
-        if res == OperationResult.kOK:
-            log.info("Operational Result: %s", res.name)
-        else:
-            log.warn("Operational Result: %s", res.name)
+    def GetStream(self, index, out_stream, ask_extract_mode):
+        raise NotImplementedError()
 
-        self.cleanup()
+    def PrepareOperation(self, ask_extract_mode):
         return HRESULT.S_OK.value
 
-    def CryptoGetTextPassword(self, me, password):
-        log.debug("CryptoGetTextPassword me=%r password=%r%r", me, ffi.string(self.password), self.password)
-        assert password[0] == ffi.NULL
-        # log.debug('passowrd?=%s', ffi.string(password[0]))
-        # password = ffi.cast('wchar_t**', password)
-        password[0] = self.password
-        # password[0] = ffi.NULL
-        log.debug("CryptoGetTextPassword returning, password=%s", ffi.string(password[0]))
-        return HRESULT.S_OK.value
-        # return len(self.password)
-
-    def CryptoGetTextPassword2(self, me, isdefined, password):
-        log.debug("CryptoGetTextPassword2 me=%r password=%r%r", me, ffi.string(self.password), self.password)
-        isdefined[0] = bool(self.password)
-        password[0] = self.password
-        log.debug("CryptoGetTextPassword returning, password=%s", ffi.string(password[0]))
+    def SetOperationResult(self, operation_result):
         return HRESULT.S_OK.value
 
-    # STDMETHOD(SetRatioInfo)(const UInt64 *inSize, const UInt64 *outSize) PURE;
-    def SetRatioInfo(self, me, in_size, out_size):
-        log.debug("SetRatioInfo: in_size=%d, out_size=%d" % (int(in_size[0]), int(out_size[0])))
+    def CryptoGetTextPassword(self, password):
+        password[0] = password_buf
+        return HRESULT.S_OK.value
+
+    def CryptoGetTextPassword2(self, has_password, password):
+        has_password[0] = password is not None
+        password[0] = password_buf
         return HRESULT.S_OK.value
 
 
 class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
-    """
-    each item is extracted to the given directory based on it's path.
-    """
+    """Archive extract callback that unpacks each item into a target directory."""
 
-    def __init__(self, archive, directory="", password=""):
-        self.directory = directory
+    def __init__(self, archive, directory, password):
         self.archive = archive
-        self._streams = []
-        # self._cleaned_up = False
+        self.directory = Path(directory)
+        self.streams = {}
         super().__init__(password)
 
-    def GetStream(self, me, index, outStream, askExtractMode):
-        askExtractMode = AskMode(askExtractMode)
-        log.debug("GetStream(%d, -, %r)", index, askExtractMode)
-
-        if askExtractMode != AskMode.kExtract:
+    def GetStream(self, index, out_stream, ask_extract_mode):
+        if ask_extract_mode != AskMode.kExtract.value:
             return HRESULT.S_OK.value
 
-        path = os.path.join(self.directory, self.archive[index].path)
-        dirname = os.path.dirname(path)
-        log.debug("extracting to: %s", path)
+        if index in self.streams:
+            return self.streams[index]
 
-        if self.archive[index].is_dir:
-            os.makedirs(path, exist_ok=True)
-            outStream[0] = ffi.NULL
+        item = self.archive[index]
+
+        path = self.directory / item.path
+        if not self.directory in (path, *path.parents):
+            return HRESULT.S_FALSE.value
+
+        if item.is_dir:
+            path.mkdir(exist_ok=True, parents=True)
+            out_stream[0] = ffi.NULL
         else:
-            os.makedirs(dirname, exist_ok=True)
-            stream = FileOutStream(path)
-            self._streams.append(stream)
-            outStream[0] = stream.instances[IID_ISequentialOutStream]
+            self.streams[index] = stream = FileOutStream(path)
+            out_stream[0] = stream.instances[IID_ISequentialOutStream]
+
         return HRESULT.S_OK.value
-
-    def cleanup(self):
-        log.debug("flushing streams")
-        # if self._cleaned_up:
-        # 	return
-
-        for stream in self._streams:
-            # TODO? stream.Release()
-            stream.filelike.flush()
-            stream.filelike.close()
-
-        self._streams = []
-        self._cleaned_up = True
-        log.debug("streams flushed & closed")
 
 
 class ArchiveExtractToStreamCallback(ArchiveExtractCallback):
-    """
-    Extract all files to the same stream (most useful for extracting one file)
-    """
-
-    def __init__(self, stream, index, password=""):
+    def __init__(self, stream, index, password):
+        self.stream = SimpleOutStream(stream)
         self.index = index
-        self.stream = FileOutStream(stream)
         super().__init__(password)
 
-    def GetStream(self, me, index, outStream, askExtractMode):
-        askExtractMode = AskMode(askExtractMode)
-        log.debug("GetStream(%r, -, %r)", index, askExtractMode)
-
-        if askExtractMode != AskMode.kExtract:
+    def GetStream(self, index, out_stream, ask_extract_mode):
+        if ask_extract_mode != AskMode.kExtract.value:
             return HRESULT.S_OK.value
 
-        if self.index == index:
-            outStream[0] = self.stream.instances[py7ziptypes.IID_ISequentialOutStream]
+        if index == self.index:
+            out_stream[0] = self.stream.instances[IID_ISequentialOutStream]
             return HRESULT.S_OK.value
         else:
-            log.debug("index not found")
-            outStream[0] = ffi.NULL
+            out_stream[0] = ffi.NULL
             return HRESULT.S_OK.value

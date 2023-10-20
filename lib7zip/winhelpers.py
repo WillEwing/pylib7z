@@ -9,20 +9,8 @@ import uuid
 # import warnings
 from datetime import datetime, timedelta
 
-from . import C, ffi, free_propvariant, log
-from .wintypes import *
-
-
-def guidp2uuid(guid):
-    """GUID* -> uuid.UUID"""
-    # if guid == ffi.NULL:
-    # 	return None
-    return uuid.UUID(bytes_le=bytes(guid[0]))
-
-
-def uuid2guidp(uu):
-    """uuid.UUID -> GUID*"""
-    return ffi.new("GUID*", uu.bytes_le)
+from . import CreatePropVariant, ffi, log
+from .ffi7z_types import *
 
 
 class HRESULTException(Exception):
@@ -80,22 +68,11 @@ def RNOK(code):
 
 
 def dealloc_propvariant(pvar):
-    log.debug("deallocing propvariant")
-    if pvar == ffi.NULL:
-        log.debug("pvar == NULL")
-        return
-    log.debug("...")
-    free_propvariant(pvar)
-    log.debug("...")
-    C.free(pvar)
-    pvar = ffi.NULL
-    log.debug("...")
-    log.debug("dealloced propvariant")
+    pass
 
 
 def alloc_propvariant():
-    return ffi.gc(C.calloc(1, ffi.sizeof("PROPVARIANT")), dealloc_propvariant)
-    # return ffi.new('PROPVARIANT*')
+    return CreatePropVariant()
 
 
 def get_prop_val(fn, forcetype=None, checktype=None):
@@ -122,8 +99,6 @@ def get_prop_val(fn, forcetype=None, checktype=None):
         return int(pvar.uhVal)
     elif vt == VARTYPE.VT_BOOL:
         return int(pvar.bVal) != 0
-    elif vt == VARTYPE.VT_CLSID:
-        return guidp2uu(pvar.puuid)
     elif vt == VARTYPE.VT_BSTR:
         return ffi.string(pvar.bstrVal)
     elif False:  # vt == VARTYPE.VT_FILETIME:

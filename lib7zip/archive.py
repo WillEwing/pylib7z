@@ -4,15 +4,16 @@ import os.path
 from functools import partial
 from weakref import ref
 
-from . import Format, dll7z, ffi, formats, log, max_sig_size, py7ziptypes
+from . import Format, formats, log
 from .cmpcodecsinfo import CompressCodecsInfo
 from .extract_callback import (
     ArchiveExtractToDirectoryCallback,
     ArchiveExtractToStreamCallback,
 )
+from .ffi7z import *
 from .open_callback import ArchiveOpenCallback
 from .stream import FileInStream
-from .winhelpers import RNOK, get_prop_val, uuid2guidp
+from .winhelpers import RNOK, get_prop_val
 
 
 class Archive:
@@ -24,7 +25,7 @@ class Archive:
         self._num_items = None
 
         self.stream = FileInStream(filename)
-        stream_inst = self.stream.instances[py7ziptypes.IID_IInStream]
+        stream_inst = self.stream.instances[IID_IInStream]
 
         if forcetype is not None:
             possible_formats = [formats[forcetype]]
@@ -41,18 +42,18 @@ class Archive:
 
         log.debug("creating callback obj")
         self.open_cb = callback = ArchiveOpenCallback(password=password)
-        self.open_cb_i = callback_inst = callback.instances[py7ziptypes.IID_IArchiveOpenCallback]
+        self.open_cb_i = callback_inst = callback.instances[IID_IArchiveOpenCallback]
 
         set_cmpcodecsinfo_ptr = ffi.new("void**")
-        archive.vtable.QueryInterface(archive, uuid2guidp(py7ziptypes.IID_ISetCompressCodecsInfo), set_cmpcodecsinfo_ptr)
+        archive.vtable.QueryInterface(archive, MarshallGUID(IID_ISetCompressCodecsInfo), set_cmpcodecsinfo_ptr)
 
         if set_cmpcodecsinfo_ptr != ffi.NULL:
             log.debug("Setting Compression Codec Info")
-            self.set_cmpcodecs_info = set_cmpcodecsinfo = ffi.cast("ISetCompressCodecsInfo*", set_cmpcodecsinfo_ptr[0])
+            self.set_cmpcodecs_info = set_cmpcodecsinfo = ffi.cast("FFI7Z_ISetCompressCodecsInfo*", set_cmpcodecsinfo_ptr[0])
 
             # TODO...
             cmp_codec_info = CompressCodecsInfo()
-            cmp_codec_info_inst = cmp_codec_info.instances[py7ziptypes.IID_ICompressCodecsInfo]
+            cmp_codec_info_inst = cmp_codec_info.instances[IID_ICompressCodecsInfo]
             set_cmpcodecsinfo.vtable.SetCompressCodecsInfo(set_cmpcodecsinfo, cmp_codec_info_inst)
             log.debug("compression codec info set")
 
@@ -76,31 +77,21 @@ class Archive:
 
     def _try_open_format(self, format: Format) -> bool:
         log.debug("Trying to open archive %r as format %s.", self.filename, format.name)
-
-        iid = uuid2guidp(py7ziptypes.IID_IInArchive)
-        classid = uuid2guidp(format.classid)
-
-        archive_raw = ffi.new("void**")
-        RNOK(dll7z.CreateObject(classid, iid, archive_raw))
-
-        if archive_raw[0] == ffi.NULL:
+        try:
+            self.archive_ref = CreateObject(format.classid, IID_IInArchive)
+            self.archive = ffi.cast("FFI7Z_IInArchive *", self.archive_ref)
+            return True
+        except Exception as exc:
+            log.exception("Could not open archive %r as format %s.", self.filename, format.name)
             return False
 
-        self.archive_raw = archive_raw
-        self.archive = ffi.cast("IInArchive*", archive_raw[0])
-
-        assert self.archive.vtable.GetNumberOfItems != ffi.NULL
-        assert self.archive.vtable.GetProperty != ffi.NULL
-
-        return True
-
     def _get_possible_formats(self) -> list[Format]:
-        file = self.stream.filelike
-        sig_buf = file.read(max_sig_size)
+        file = self.stream.stream
+        sig_buf = file.read(256)
         file.seek(0)
 
         possible_formats = []
-        for format in formats.values():
+        for format in formats:
             if format.signatures and format.signature_offset == 0 and not any((sig_buf[: len(sig)] for sig in format.signatures)):
                 continue
             # TODO: Handle 'backward open' files.
@@ -114,17 +105,11 @@ class Archive:
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.close()
-
-    def __del__(self):
+        pass
         self.close()
 
     def close(self):
-        log.debug("Archive.close()")
-        if self.archive == ffi.NULL or self.archive.vtable == ffi.NULL or self.archive.vtable.Close == ffi.NULL:
-            log.warn("close failed, NULLs")
-            return
-        RNOK(self.archive.vtable.Close(self.archive))
+        pass
 
     def __len__(self):
         log.debug("len(Archive)")
@@ -169,10 +154,6 @@ class Archive:
         for i in range(len(self)):
             log.debug("getting %dth item", i)
             yield self[i]
-            # isdir = get_bool_prop(i, py7ziptypes.kpidIsDir, self.itm_prop_fn)
-            # path = get_string_prop(i, py7ziptypes.kpidPath, self.itm_prop_fn)
-            # crc = get_hex_prop(i, py7ziptypes.kpidCRC, self.itm_prop_fn)
-            # yield isdir, path, crc
 
     def __getattr__(self, attr):
         pass
@@ -189,7 +170,7 @@ class Archive:
         password = password or self.password
 
         callback = ArchiveExtractToDirectoryCallback(self, directory, password)
-        callback_inst = callback.instances[py7ziptypes.IID_IArchiveExtractCallback]
+        callback_inst = callback.instances[IID_IArchiveExtractCallback]
         assert self.archive.vtable.Extract != ffi.NULL
         # import pdb; pdb.set_trace()
         log.debug("started extract")
@@ -210,7 +191,7 @@ class ArchiveItem:
         password = password or self.password or archive.password
 
         self.callback = callback = ArchiveExtractToStreamCallback(file, self.index, password)
-        self.cb_inst = callback_inst = callback.instances[py7ziptypes.IID_IArchiveExtractCallback]
+        self.cb_inst = callback_inst = callback.instances[IID_IArchiveExtractCallback]
         RNOK(archive.archive.vtable.Extract(archive.archive, ffi.NULL, 0xFFFFFFFF, 0, callback_inst))
 
     @property
@@ -227,5 +208,5 @@ class ArchiveItem:
         archive = self.archive_ref()
         if not attr.islower():
             raise AttributeError()
-        propid = getattr(py7ziptypes.ArchiveProps, attr.upper())
+        propid = getattr(ArchiveProps, attr.upper())
         return get_prop_val(partial(archive.itm_prop_fn, self.index, propid))

@@ -4,6 +4,8 @@
 #include <Windows.h>
 #include <stdint.h>
 
+#include <stdio.h>
+
 /* Library Interface */
 
 typedef HRESULT(WINAPI *FFI7Z_PFN_CreateObject)(const GUID *clsID, const GUID *iid, void **outObject);
@@ -113,7 +115,7 @@ HRESULT GetMethodProperty(uint32_t index, PROPID prop_id, PROPVARIANT *value)
 
 PROPVARIANT *CreatePropVariant()
 {
-    PROPVARIANT *pvar = (PROPVARIANT *)HeapAlloc(NULL, HEAP_ZERO_MEMORY, sizeof(PROPVARIANT));
+    PROPVARIANT *pvar = (PROPVARIANT *)HeapAlloc(GetProcessHeap(), 0, sizeof(PROPVARIANT));
     if (pvar)
     {
         PropVariantInit(pvar);
@@ -126,10 +128,6 @@ void DeletePropVariant(PROPVARIANT *pvar)
     if (pvar)
     {
         PropVariantClear(pvar);
-        HeapFree(NULL, 0, pvar);
+        HeapFree(GetProcessHeap(), 0, pvar);
     }
 }
-
-/* COM GUIDs, Interface bindings */
-
-#include "ffi7z_com.inl"

@@ -11,13 +11,6 @@ import pycparser
 Argument = tuple[str, str]
 
 
-def CGUID(guid: GUID) -> str:
-    guid_bytes = guid.bytes
-    data1, data2, data3, *data4 = unpack_from(">IHH8B", guid_bytes)
-    data4_inner_str = ", ".join(f"{byte:#04x}" for byte in data4)
-    return f"{{ {data1:#010x}, {data2:#06x}, {data3:#06x}, {{ {data4_inner_str} }} }}"
-
-
 def Make7ZIID(x, y) -> GUID:
     if not (0 <= x and x <= 255 and 0 <= y and y <= 255):
         raise ValueError("Value out of range.")
@@ -212,7 +205,7 @@ IArchiveExtractCallback = Interface(
             "GetStream",
             [
                 ("uint32_t", "index"),
-                (f"{ISequentialOutStream.base_struct_name} *", "out_stream"),
+                (f"{ISequentialOutStream.base_struct_name} **", "out_stream"),
                 ("int32_t", "ask_extract_mode"),
             ],
         ),
@@ -522,7 +515,7 @@ def gen_common():
         yield ""
         yield f"typedef struct {interface.py_impl_struct_name}_tag {{"
         yield f"    {interface.vtable_name} * vtable;"
-        yield f"    void * pyojbect_tag;"
+        yield f"    void * pyobject_handle;"
         yield f"}} {interface.py_impl_struct_name};"
         yield ""
 
@@ -532,9 +525,9 @@ def gen_cdefs():
     yield from gen_common()
     yield ""
     for interface in INTERFACES:
-        yield f"const GUID FFI7Z_IID_{interface.name};"
+        # yield f"const GUID FFI7Z_IID_{interface.name};"
         yield f"const {interface.vtable_name} {interface.py_impl_struct_name}_vtable;"
-        yield ""
+    yield ""
     yield 'extern "Python" {'
     for interface in INTERFACES:
         for method in interface.methods:
@@ -558,8 +551,6 @@ def gen_cimpl():
             yield f"{method.return_type} WINAPI FFI7Z_Py_{interface.name}_{method.name}({args_str});"
     yield ""
     for interface in INTERFACES:
-        yield f"const GUID FFI7Z_IID_{interface.name} = {CGUID(interface.guid)};"
-        yield ""
         yield f"const {interface.vtable_name} {interface.py_impl_struct_name}_vtable = {{"
         for origin_intf, method in interface.all_methods_with_origin:
             yield f"  .{method.name} = FFI7Z_Py_{origin_intf.name}_{method.name},"
@@ -576,7 +567,7 @@ def gen_py_thunks():
     yield "#!/usr/bin/env python"
     yield "# -*- coding: utf-8 -*-"
     yield ""
-    yield "from _ffi7z import lib, ffi"
+    yield "from ._ffi7z import lib, ffi"
     yield ""
     for interface in INTERFACES:
         for method in interface.methods:
@@ -585,7 +576,7 @@ def gen_py_thunks():
             pass_args_string = ", ".join(f"{b}" for a, b in method.arguments)
             yield f"def FFI7Z_Py_{interface.name}_{method.name}({args_string}):"
             yield f'    this_struct = ffi.cast("{interface.py_impl_struct_name} *", this)'
-            yield f"    self = ffi.from_handle(this_struct[0].pyobject_tag)"
+            yield f"    self = ffi.from_handle(this_struct[0].pyobject_handle)"
             yield f"    return self.{method.name}({pass_args_string})"
             yield ""
 

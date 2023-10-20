@@ -3,32 +3,24 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from . import dll7z, ffi, methods
-from .py7ziptypes import IID_ICompressCodecsInfo
-from .simplecom import IUnknownImpl
-from .winhelpers import uuid2guidp
-from .wintypes import HRESULT
+from .ffi7z import *
 
 
 class CompressCodecsInfo(IUnknownImpl):
-    GUIDS = {
+    IIDS = {
         IID_ICompressCodecsInfo: "ICompressCodecsInfo",
     }
 
-    def GetNumberOfMethods(self, me, numMethods):
-        log.debug("Info.GetNumberOfMethods")
-        return dll7z.GetNumberOfMethods(numMethods)
+    def GetNumMethods(self, numMethods):
+        return lib.GetNumberOfMethods(numMethods)
 
-    def GetProperty(self, me, index, propID, value):
-        log.debug("Info.GetProperty")
-        return dll7z.GetMethodProperty(index, propID, value)
+    def GetProperty(self, index, propID, value):
+        return lib.GetMethodProperty(index, propID, value)
 
-    def CreateDecoder(self, me, index, iid, coder):
-        log.debug("Info.CreateDecoder")
-        classid = uuid2guidp(methods[index].decoder)
-        return dll7z.CreateObject(classid, iid, coder)
+    def CreateDecoder(self, index, iid, coder):
+        classid = MarshallGUID(methods[index].decoder)
+        return lib.CreateObject(classid, iid, coder)
 
-    def CreateEncoder(self, me, index, iid, coder):
-        log.debug("Info.CreateEncoder")
-        classid = uuid2guidp(methods[index].encoder)
-        return dll7z.CreateObject(classid, iid, coder)
+    def CreateEncoder(self, index, iid, coder):
+        classid = MarshallGUID(methods[index].encoder)
+        return lib.CreateObject(classid, iid, coder)
