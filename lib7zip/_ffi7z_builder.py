@@ -12,8 +12,6 @@ def load_text(filename: str) -> str:
 
 ffibuilder = FFI()
 ffibuilder.set_source("_ffi7z", load_text("ffi7z.c"), libraries=["Ole32"])
-
-
 for name in ("types", "module", "com"):
     ffibuilder.cdef(load_text(f"ffi7z_{name}.cdef"))
 

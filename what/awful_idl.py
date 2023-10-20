@@ -568,19 +568,39 @@ def gen_cimpl():
     yield ("/* - END GENERATED CIMPL - */")
 
 
-def gen_pydefs():
-    pass
-
-
 def make_cimpl():
     return "\n".join(gen_cimpl())
 
 
+def gen_py_thunks():
+    yield "#!/usr/bin/env python"
+    yield "# -*- coding: utf-8 -*-"
+    yield ""
+    yield "from _ffi7z import lib, ffi"
+    yield ""
+    for interface in INTERFACES:
+        for method in interface.methods:
+            yield f"@ffi.def_extern()"
+            args_string = ", ".join(f"{b}" for a, b in (("void *", "this"), *method.arguments))
+            pass_args_string = ", ".join(f"{b}" for a, b in method.arguments)
+            yield f"def FFI7Z_Py_{interface.name}_{method.name}({args_string}):"
+            yield f'    this_struct = ffi.cast("{interface.py_impl_struct_name} *", this)'
+            yield f"    self = ffi.from_handle(this_struct[0].pyobject_tag)"
+            yield f"    return self.{method.name}({pass_args_string})"
+            yield ""
+
+
+def make_py_thunks():
+    return "\n".join(gen_py_thunks())
+
+
 def main():
-    with open("ffi7z_com.cdef", "w") as cdefs_file:
+    with open("ffi7z_com.cdef", "w", encoding="utf-8") as cdefs_file:
         cdefs_file.write(make_cdefs())
-    with open("ffi7z_com.inl", "w") as cimpl_file:
+    with open("ffi7z_com.inl", "w", encoding="utf-8") as cimpl_file:
         cimpl_file.write(make_cimpl())
+    with open("ffi7z_thunk.py", "w", encoding="utf-8") as pythunk_file:
+        pythunk_file.write(make_py_thunks())
 
 
 if __name__ == "__main__":
