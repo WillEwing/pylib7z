@@ -67,7 +67,6 @@ class Interface:
 # - IArchiveOpenCallback
 # - IArchiveOpenSetSubArchiveName
 # - IArchiveOpenVolumeCallback
-# - ICompressCodecsInfo
 # - ICompressProgressInfo
 # - ICryptoGetTextPassword
 # - ICryptoGetTextPassword2
@@ -76,7 +75,6 @@ class Interface:
 # - IOutStream
 # - ISequentialInStream
 # - ISequentialOutStream
-# - ISetCompressCodecsInfo
 # - IUnknown
 
 
@@ -492,12 +490,10 @@ INTERFACES = [
     IArchiveOpenCallback,
     IArchiveOpenSetSubArchiveName,
     IArchiveOpenVolumeCallback,
-    ICompressCodecsInfo,
     ICompressProgressInfo,
     ICryptoGetTextPassword,
     ICryptoGetTextPassword2,
     IInArchive,
-    ISetCompressCodecsInfo,
 ]
 
 

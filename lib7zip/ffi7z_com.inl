@@ -167,25 +167,6 @@ typedef struct FFI7Z_PyIArchiveOpenVolumeCallback_tag {
     void * pyobject_handle;
 } FFI7Z_PyIArchiveOpenVolumeCallback;
 
-typedef struct FFI7Z_ICompressCodecsInfo_vtable_tag {
-    HRESULT (WINAPI *QueryInterface)(void* self, GUID * iid, void ** out_object);
-    uint32_t (WINAPI *AddRef)(void* self);
-    uint32_t (WINAPI *Release)(void* self);
-    HRESULT (WINAPI *GetNumMethods)(void* self, uint32_t * num_methods);
-    HRESULT (WINAPI *GetProperty)(void* self, uint32_t index, PROPID prop_id, PROPVARIANT * value);
-    HRESULT (WINAPI *CreateDecoder)(void* self, uint32_t index, const GUID * iid, void ** coder);
-    HRESULT (WINAPI *CreateEncoder)(void* self, uint32_t index, const GUID * iid, void ** coder);
-} FFI7Z_ICompressCodecsInfo_vtable;
-
-typedef struct FFI7Z_ICompressCodecsInfo_tag {
-    FFI7Z_ICompressCodecsInfo_vtable * vtable;
-} FFI7Z_ICompressCodecsInfo;
-
-typedef struct FFI7Z_PyICompressCodecsInfo_tag {
-    FFI7Z_ICompressCodecsInfo_vtable * vtable;
-    void * pyobject_handle;
-} FFI7Z_PyICompressCodecsInfo;
-
 typedef struct FFI7Z_ICompressProgressInfo_vtable_tag {
     HRESULT (WINAPI *QueryInterface)(void* self, GUID * iid, void ** out_object);
     uint32_t (WINAPI *AddRef)(void* self);
@@ -259,22 +240,6 @@ typedef struct FFI7Z_PyIInArchive_tag {
     void * pyobject_handle;
 } FFI7Z_PyIInArchive;
 
-typedef struct FFI7Z_ISetCompressCodecsInfo_vtable_tag {
-    HRESULT (WINAPI *QueryInterface)(void* self, GUID * iid, void ** out_object);
-    uint32_t (WINAPI *AddRef)(void* self);
-    uint32_t (WINAPI *Release)(void* self);
-    HRESULT (WINAPI *SetCompressCodecsInfo)(void* self, FFI7Z_ICompressCodecsInfo * compress_codecs_info);
-} FFI7Z_ISetCompressCodecsInfo_vtable;
-
-typedef struct FFI7Z_ISetCompressCodecsInfo_tag {
-    FFI7Z_ISetCompressCodecsInfo_vtable * vtable;
-} FFI7Z_ISetCompressCodecsInfo;
-
-typedef struct FFI7Z_PyISetCompressCodecsInfo_tag {
-    FFI7Z_ISetCompressCodecsInfo_vtable * vtable;
-    void * pyobject_handle;
-} FFI7Z_PyISetCompressCodecsInfo;
-
 
 HRESULT WINAPI FFI7Z_Py_IUnknown_QueryInterface(void* self, GUID * iid, void ** out_object);
 uint32_t WINAPI FFI7Z_Py_IUnknown_AddRef(void* self);
@@ -293,10 +258,6 @@ HRESULT WINAPI FFI7Z_Py_IArchiveOpenCallback_SetCompleted(void* self, const uint
 HRESULT WINAPI FFI7Z_Py_IArchiveOpenSetSubArchiveName_SetSubArchiveName(void* self, const wchar_t * name);
 HRESULT WINAPI FFI7Z_Py_IArchiveOpenVolumeCallback_GetProperty(void* self, PROPID prop_id, PROPVARIANT * value);
 HRESULT WINAPI FFI7Z_Py_IArchiveOpenVolumeCallback_GetStream(void* self, const wchar_t * name, FFI7Z_IInStream ** in_stream);
-HRESULT WINAPI FFI7Z_Py_ICompressCodecsInfo_GetNumMethods(void* self, uint32_t * num_methods);
-HRESULT WINAPI FFI7Z_Py_ICompressCodecsInfo_GetProperty(void* self, uint32_t index, PROPID prop_id, PROPVARIANT * value);
-HRESULT WINAPI FFI7Z_Py_ICompressCodecsInfo_CreateDecoder(void* self, uint32_t index, const GUID * iid, void ** coder);
-HRESULT WINAPI FFI7Z_Py_ICompressCodecsInfo_CreateEncoder(void* self, uint32_t index, const GUID * iid, void ** coder);
 HRESULT WINAPI FFI7Z_Py_ICompressProgressInfo_SetRatioInfo(void* self, const uint64_t * in_size, const uint64_t * out_size);
 HRESULT WINAPI FFI7Z_Py_ICryptoGetTextPassword_CryptoGetTextPassword(void* self, wchar_t ** password);
 HRESULT WINAPI FFI7Z_Py_ICryptoGetTextPassword2_CryptoGetTextPassword2(void* self, int32_t * password_is_defined, wchar_t ** password);
@@ -310,7 +271,6 @@ HRESULT WINAPI FFI7Z_Py_IInArchive_GetNumberOfProperties(void* self, uint32_t * 
 HRESULT WINAPI FFI7Z_Py_IInArchive_GetPropertyInfo(void* self, uint32_t index, wchar_t ** name, PROPID * prop_id, VARTYPE * var_type);
 HRESULT WINAPI FFI7Z_Py_IInArchive_GetNumberOfArchiveProperties(void* self, uint32_t * num_properties);
 HRESULT WINAPI FFI7Z_Py_IInArchive_GetArchivePropertyInfo(void* self, uint32_t index, wchar_t ** name, PROPID * prop_id, VARTYPE * var_type);
-HRESULT WINAPI FFI7Z_Py_ISetCompressCodecsInfo_SetCompressCodecsInfo(void* self, FFI7Z_ICompressCodecsInfo * compress_codecs_info);
 
 const FFI7Z_IUnknown_vtable FFI7Z_PyIUnknown_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
@@ -390,16 +350,6 @@ const FFI7Z_IArchiveOpenVolumeCallback_vtable FFI7Z_PyIArchiveOpenVolumeCallback
   .GetStream = FFI7Z_Py_IArchiveOpenVolumeCallback_GetStream,
 };
 
-const FFI7Z_ICompressCodecsInfo_vtable FFI7Z_PyICompressCodecsInfo_vtable = {
-  .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
-  .AddRef = FFI7Z_Py_IUnknown_AddRef,
-  .Release = FFI7Z_Py_IUnknown_Release,
-  .GetNumMethods = FFI7Z_Py_ICompressCodecsInfo_GetNumMethods,
-  .GetProperty = FFI7Z_Py_ICompressCodecsInfo_GetProperty,
-  .CreateDecoder = FFI7Z_Py_ICompressCodecsInfo_CreateDecoder,
-  .CreateEncoder = FFI7Z_Py_ICompressCodecsInfo_CreateEncoder,
-};
-
 const FFI7Z_ICompressProgressInfo_vtable FFI7Z_PyICompressProgressInfo_vtable = {
   .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
   .AddRef = FFI7Z_Py_IUnknown_AddRef,
@@ -435,13 +385,6 @@ const FFI7Z_IInArchive_vtable FFI7Z_PyIInArchive_vtable = {
   .GetPropertyInfo = FFI7Z_Py_IInArchive_GetPropertyInfo,
   .GetNumberOfArchiveProperties = FFI7Z_Py_IInArchive_GetNumberOfArchiveProperties,
   .GetArchivePropertyInfo = FFI7Z_Py_IInArchive_GetArchivePropertyInfo,
-};
-
-const FFI7Z_ISetCompressCodecsInfo_vtable FFI7Z_PyISetCompressCodecsInfo_vtable = {
-  .QueryInterface = FFI7Z_Py_IUnknown_QueryInterface,
-  .AddRef = FFI7Z_Py_IUnknown_AddRef,
-  .Release = FFI7Z_Py_IUnknown_Release,
-  .SetCompressCodecsInfo = FFI7Z_Py_ISetCompressCodecsInfo_SetCompressCodecsInfo,
 };
 
 /* - END GENERATED CIMPL - */

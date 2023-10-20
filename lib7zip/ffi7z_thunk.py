@@ -124,34 +124,6 @@ def FFI7Z_Py_IArchiveOpenVolumeCallback_GetStream(this, name, in_stream):
 
 
 @ffi.def_extern()
-def FFI7Z_Py_ICompressCodecsInfo_GetNumMethods(this, num_methods):
-    this_struct = ffi.cast("FFI7Z_PyICompressCodecsInfo *", this)
-    self = ffi.from_handle(this_struct[0].pyobject_handle)
-    return self.GetNumMethods(num_methods)
-
-
-@ffi.def_extern()
-def FFI7Z_Py_ICompressCodecsInfo_GetProperty(this, index, prop_id, value):
-    this_struct = ffi.cast("FFI7Z_PyICompressCodecsInfo *", this)
-    self = ffi.from_handle(this_struct[0].pyobject_handle)
-    return self.GetProperty(index, prop_id, value)
-
-
-@ffi.def_extern()
-def FFI7Z_Py_ICompressCodecsInfo_CreateDecoder(this, index, iid, coder):
-    this_struct = ffi.cast("FFI7Z_PyICompressCodecsInfo *", this)
-    self = ffi.from_handle(this_struct[0].pyobject_handle)
-    return self.CreateDecoder(index, iid, coder)
-
-
-@ffi.def_extern()
-def FFI7Z_Py_ICompressCodecsInfo_CreateEncoder(this, index, iid, coder):
-    this_struct = ffi.cast("FFI7Z_PyICompressCodecsInfo *", this)
-    self = ffi.from_handle(this_struct[0].pyobject_handle)
-    return self.CreateEncoder(index, iid, coder)
-
-
-@ffi.def_extern()
 def FFI7Z_Py_ICompressProgressInfo_SetRatioInfo(this, in_size, out_size):
     this_struct = ffi.cast("FFI7Z_PyICompressProgressInfo *", this)
     self = ffi.from_handle(this_struct[0].pyobject_handle)
@@ -240,10 +212,3 @@ def FFI7Z_Py_IInArchive_GetArchivePropertyInfo(this, index, name, prop_id, var_t
     this_struct = ffi.cast("FFI7Z_PyIInArchive *", this)
     self = ffi.from_handle(this_struct[0].pyobject_handle)
     return self.GetArchivePropertyInfo(index, name, prop_id, var_type)
-
-
-@ffi.def_extern()
-def FFI7Z_Py_ISetCompressCodecsInfo_SetCompressCodecsInfo(this, compress_codecs_info):
-    this_struct = ffi.cast("FFI7Z_PyISetCompressCodecsInfo *", this)
-    self = ffi.from_handle(this_struct[0].pyobject_handle)
-    return self.SetCompressCodecsInfo(compress_codecs_info)
