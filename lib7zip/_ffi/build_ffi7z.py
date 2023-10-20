@@ -14,12 +14,12 @@ ffibuilder = FFI()
 ffibuilder.set_source("_ffi7z", load_text("ffi7z.c"), libraries=["Ole32"])
 
 
-for name in ("types", "module"):
+for name in ("types", "module", "com"):
     ffibuilder.cdef(load_text(f"ffi7z_{name}.cdef"))
 
 
 def main():
-    ffibuilder.compile("_ffi7z", verbose=1, target="_ffi7z.*")
+    ffibuilder.compile(verbose=1)
 
 
 if __name__ == "__main__":

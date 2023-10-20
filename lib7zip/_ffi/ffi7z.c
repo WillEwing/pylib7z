@@ -130,4 +130,6 @@ void DeletePropVariant(PROPVARIANT *pvar)
     }
 }
 
-/* GUIDs and Interfaces */
+/* COM GUIDs, Interface bindings */
+
+#include "ffi7z_com.inl"
