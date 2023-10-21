@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Interfaces and embedded IDL for ffi7zip.
+"""
+
 import re
 from dataclasses import dataclass
-from functools import cache, cached_property
-from struct import unpack_from
-from typing import Any, Generator, NamedTuple, Optional
+from typing import List, NamedTuple, Optional
 from uuid import UUID as GUID
 
-from pycparser.c_lexer import CLexer
+from pycparser.c_lexer import CLexer  # type: ignore
 
 is_c_ident = re.compile("[A-Za-z_][0-9A-Za-z_]*").match
 
 
-def Make7ZIID(x, y) -> GUID:
+def make_7zip_iid(x, y):
+    """
+    Make an IID for a class in 7z.dll.
+    """
     if not (0 <= x and x <= 255 and 0 <= y and y <= 255):
         raise ValueError("Value out of range.")
     return GUID(f"{{23170F69-40C1-278A-0000-00{x:02x}00{y:02x}0000}}")
@@ -25,15 +30,15 @@ class CTypeDecl:
     """
 
     def __error_func(self, msg, start, end):
-        raise ValueError("%s [%d:%d]", msg, start, end)
+        raise ValueError(f"{msg} [{start}:{end}]")
 
     def __unexpected(self, *args):
         raise ValueError("Unexpected brace.")
 
-    def __assume_type_valid(self, *args):
+    def __assume_type_valid(self, _):
         return True
 
-    def __init__(self, raw_ctype_decl: str | list[str]) -> None:
+    def __init__(self, raw_ctype_decl):
         if not isinstance(raw_ctype_decl, str):
             raw_ctype_decl = " ".join(raw_ctype_decl)
         lexer = CLexer(
@@ -44,19 +49,18 @@ class CTypeDecl:
         )
         lexer.build()
         lexer.input(raw_ctype_decl)
-        self.tokens: list[str] = []
+        self.tokens = []
         while True:
             next_token = lexer.token()
             if next_token is None:
                 break
             self.tokens.append(next_token.value)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         self_str = str(self)
         return f"{self.__class__.__name__}({self_str!r})"
 
-    @cache
-    def __str__(self) -> str:
+    def __str__(self):
         value = ""
         for token in self.tokens:
             if value and is_c_ident(token):
@@ -65,38 +69,56 @@ class CTypeDecl:
         return value
 
 
-class Argument(NamedTuple):
+class CArg(NamedTuple):
+    """
+    Method argument definition.
+    """
+
     dtype: CTypeDecl
     name: str
 
 
 @dataclass
-class Method:
-    def __init__(self, name: str, arguments: list[tuple[CTypeDecl | str, str]], return_type: str = "HRESULT"):
+class CMethod:
+    """
+    A method definitoin.
+    """
+
+    def __init__(self, name, arguments, return_type="HRESULT"):
         self.name = name
         self.return_type = return_type
         self.arguments = [(CTypeDecl(str(dtype)), name) for dtype, name in arguments]
 
     name: str
-    arguments: list[Argument]
+    arguments: List[CArg]
     return_type: str
 
 
 @dataclass
 class Interface:
+    """
+    An interface definition.
+    """
+
     name: str
     guid: GUID
     parent: Optional["Interface"]
-    methods: list[Method]
+    methods: List[CMethod]
 
     @property
-    def all_methods_with_origin(self) -> Generator[tuple["Interface", Method], None, None]:
+    def all_methods_with_origin(self):
+        """
+        All of the methods as (originating0interface, method) pairs.
+        """
         if self.parent:
             yield from self.parent.all_methods_with_origin
         yield from ((self, method) for method in self.methods)
 
     @property
-    def all_methods(self) -> Generator[Method, None, None]:
+    def all_methods(self):
+        """
+        All of the interface's methods.
+        """
         yield from (method for intf, method in self.all_methods_with_origin)
 
 
@@ -106,7 +128,7 @@ IUnknown = Interface(
     None,
     [
         # STDMETHOD(QueryInterface) (REFIID iid, void **outObject) =0;
-        Method(
+        CMethod(
             "QueryInterface",
             return_type="HRESULT",
             arguments=[
@@ -115,13 +137,13 @@ IUnknown = Interface(
             ],
         ),
         # STDMETHOD_(ULONG, AddRef)() =0;
-        Method(
+        CMethod(
             "AddRef",
             return_type="uint32_t",
             arguments=[],
         ),
         # STDMETHOD_(ULONG, Release)() =0;
-        Method(
+        CMethod(
             "Release",
             return_type="uint32_t",
             arguments=[],
@@ -131,10 +153,10 @@ IUnknown = Interface(
 
 ISequentialInStream = Interface(
     "ISequentialInStream",
-    Make7ZIID(0x03, 0x01),
+    make_7zip_iid(0x03, 0x01),
     IUnknown,
     [
-        Method(
+        CMethod(
             "Read",
             [
                 ("void *", "data"),
@@ -147,10 +169,10 @@ ISequentialInStream = Interface(
 
 IInStream = Interface(
     "IInStream",
-    Make7ZIID(0x03, 0x03),
+    make_7zip_iid(0x03, 0x03),
     ISequentialInStream,
     [
-        Method(
+        CMethod(
             "Seek",
             [
                 ("int64_t", "offset"),
@@ -163,10 +185,10 @@ IInStream = Interface(
 
 ISequentialOutStream = Interface(
     "ISequentialOutStream",
-    Make7ZIID(0x03, 0x02),
+    make_7zip_iid(0x03, 0x02),
     IUnknown,
     [
-        Method(
+        CMethod(
             "Write",
             [
                 ("const void *", "data"),
@@ -179,10 +201,10 @@ ISequentialOutStream = Interface(
 
 IOutStream = Interface(
     "IOutStream",
-    Make7ZIID(0x03, 0x05),
+    make_7zip_iid(0x03, 0x05),
     ISequentialOutStream,
     [
-        Method(
+        CMethod(
             "Seek",
             [
                 ("int64_t", "offset"),
@@ -195,18 +217,18 @@ IOutStream = Interface(
 
 IProgress = Interface(
     "IProgress",
-    Make7ZIID(0x00, 0x05),
+    make_7zip_iid(0x00, 0x05),
     IUnknown,
     [
         # x(SetTotal(UInt64 total))
-        Method(
+        CMethod(
             "SetTotal",
             [
                 ("uint64_t", "total"),
             ],
         ),
         # x(SetCompleted(const UInt64 *completeValue))
-        Method(
+        CMethod(
             "SetCompleted",
             [
                 ("const uint64_t *", "complete_value"),
@@ -217,11 +239,11 @@ IProgress = Interface(
 
 IArchiveExtractCallback = Interface(
     "IArchiveExtractCallback",
-    Make7ZIID(0x06, 0x20),
+    make_7zip_iid(0x06, 0x20),
     IProgress,
     [
         # x(GetStream(UInt32 index, ISequentialOutStream **outStream, Int32 askExtractMode)) \
-        Method(
+        CMethod(
             "GetStream",
             [
                 ("uint32_t", "index"),
@@ -230,14 +252,14 @@ IArchiveExtractCallback = Interface(
             ],
         ),
         # x(PrepareOperation(Int32 askExtractMode)) \
-        Method(
+        CMethod(
             "PrepareOperation",
             [
                 ("int32_t", "ask_extract_mode"),
             ],
         ),
         # x(SetOperationResult(Int32 opRes)) \
-        Method(
+        CMethod(
             "SetOperationResult",
             [
                 ("int32_t", "op_result"),
@@ -248,11 +270,11 @@ IArchiveExtractCallback = Interface(
 
 IArchiveOpenCallback = Interface(
     "IArchiveOpenCallback",
-    Make7ZIID(0x06, 0x10),
+    make_7zip_iid(0x06, 0x10),
     IUnknown,
     [
         # x(SetTotal(const UInt64 *files, const UInt64 *bytes))
-        Method(
+        CMethod(
             "SetTotal",
             [
                 ("const uint64_t *", "files"),
@@ -260,7 +282,7 @@ IArchiveOpenCallback = Interface(
             ],
         ),
         # x(SetCompleted(const UInt64 *files, const UInt64 *bytes))
-        Method(
+        CMethod(
             "SetCompleted",
             [
                 ("const uint64_t *", "files"),
@@ -272,11 +294,11 @@ IArchiveOpenCallback = Interface(
 
 IArchiveOpenSetSubArchiveName = Interface(
     "IArchiveOpenSetSubArchiveName",
-    Make7ZIID(0x06, 0x50),
+    make_7zip_iid(0x06, 0x50),
     IUnknown,
     [
         # x(SetSubArchiveName(const wchar_t *name))
-        Method(
+        CMethod(
             "SetSubArchiveName",
             [
                 ("const wchar_t *", "name"),
@@ -287,11 +309,11 @@ IArchiveOpenSetSubArchiveName = Interface(
 
 IArchiveOpenVolumeCallback = Interface(
     "IArchiveOpenVolumeCallback",
-    Make7ZIID(0x06, 0x30),
+    make_7zip_iid(0x06, 0x30),
     IUnknown,
     [
         # x(GetProperty(PROPID propID, PROPVARIANT *value))
-        Method(
+        CMethod(
             "GetProperty",
             [
                 ("PROPID", "prop_id"),
@@ -299,7 +321,7 @@ IArchiveOpenVolumeCallback = Interface(
             ],
         ),
         # x(GetStream(const wchar_t *name, IInStream **inStream))
-        Method(
+        CMethod(
             "GetStream",
             [
                 ("const wchar_t *", "name"),
@@ -311,18 +333,18 @@ IArchiveOpenVolumeCallback = Interface(
 
 ICompressCodecsInfo = Interface(
     "ICompressCodecsInfo",
-    Make7ZIID(0x04, 0x60),
+    make_7zip_iid(0x04, 0x60),
     IUnknown,
     [
         # x(GetNumMethods(UInt32 *numMethods))
-        Method(
+        CMethod(
             "GetNumMethods",
             [
                 ("uint32_t *", "num_methods"),
             ],
         ),
         # x(GetProperty(UInt32 index, PROPID propID, PROPVARIANT *value))
-        Method(
+        CMethod(
             "GetProperty",
             [
                 ("uint32_t", "index"),
@@ -331,7 +353,7 @@ ICompressCodecsInfo = Interface(
             ],
         ),
         # x(CreateDecoder(UInt32 index, const GUID *iid, void* *coder))
-        Method(
+        CMethod(
             "CreateDecoder",
             [
                 ("uint32_t", "index"),
@@ -340,7 +362,7 @@ ICompressCodecsInfo = Interface(
             ],
         ),
         # x(CreateEncoder(UInt32 index, const GUID *iid, void* *coder))
-        Method(
+        CMethod(
             "CreateEncoder",
             [
                 ("uint32_t", "index"),
@@ -353,11 +375,11 @@ ICompressCodecsInfo = Interface(
 
 ICompressProgressInfo = Interface(
     "ICompressProgressInfo",
-    Make7ZIID(0x04, 0x04),
+    make_7zip_iid(0x04, 0x04),
     IUnknown,
     [
         # x(SetRatioInfo(const UInt64 *inSize, const UInt64 *outSize))
-        Method(
+        CMethod(
             "SetRatioInfo",
             [
                 ("const uint64_t *", "in_size"),
@@ -369,11 +391,11 @@ ICompressProgressInfo = Interface(
 
 ICryptoGetTextPassword = Interface(
     "ICryptoGetTextPassword",
-    Make7ZIID(0x05, 0x10),
+    make_7zip_iid(0x05, 0x10),
     IUnknown,
     [
         # x(CryptoGetTextPassword(BSTR *password))
-        Method(
+        CMethod(
             "CryptoGetTextPassword",
             [
                 ("wchar_t **", "password"),
@@ -384,11 +406,11 @@ ICryptoGetTextPassword = Interface(
 
 ICryptoGetTextPassword2 = Interface(
     "ICryptoGetTextPassword2",
-    Make7ZIID(0x05, 0x11),
+    make_7zip_iid(0x05, 0x11),
     IUnknown,
     [
         # x(CryptoGetTextPassword2(Int32 *passwordIsDefined, BSTR *password))
-        Method(
+        CMethod(
             "CryptoGetTextPassword2",
             [
                 ("int32_t *", "password_is_defined"),
@@ -400,11 +422,11 @@ ICryptoGetTextPassword2 = Interface(
 
 IInArchive = Interface(
     "IInArchive",
-    Make7ZIID(0x06, 0x60),
+    make_7zip_iid(0x06, 0x60),
     IUnknown,
     [
         # x(Open(IInStream *stream, const UInt64 *maxCheckStartPosition, IArchiveOpenCallback *openCallback))
-        Method(
+        CMethod(
             "Open",
             [
                 ("IInStream *", "stream"),
@@ -413,16 +435,16 @@ IInArchive = Interface(
             ],
         ),
         # x(Close())
-        Method("Close", []),
+        CMethod("Close", []),
         # x(GetNumberOfItems(UInt32 *numItems))
-        Method(
+        CMethod(
             "GetNumberOfItems",
             [
                 ("uint32_t *", "num_items"),
             ],
         ),
         # x(GetProperty(UInt32 index, PROPID propID, PROPVARIANT *value))
-        Method(
+        CMethod(
             "GetProperty",
             [
                 ("uint32_t", "index"),
@@ -431,7 +453,7 @@ IInArchive = Interface(
             ],
         ),
         # x(Extract(const UInt32 *indices, UInt32 numItems, Int32 testMode, IArchiveExtractCallback *extractCallback))
-        Method(
+        CMethod(
             "Extract",
             [
                 ("const uint32_t *", "indices"),
@@ -441,7 +463,7 @@ IInArchive = Interface(
             ],
         ),
         # x(GetArchiveProperty(PROPID propID, PROPVARIANT *value))
-        Method(
+        CMethod(
             "GetArchiveProperty",
             [
                 ("PROPID", "prop_id"),
@@ -449,14 +471,14 @@ IInArchive = Interface(
             ],
         ),
         # x(GetNumberOfProperties(UInt32 *numProps))
-        Method(
+        CMethod(
             "GetNumberOfProperties",
             [
                 ("uint32_t *", "num_props"),
             ],
         ),
         # x(GetPropertyInfo(UInt32 index, BSTR *name, PROPID *propID, VARTYPE *varType))
-        Method(
+        CMethod(
             "GetPropertyInfo",
             [
                 ("uint32_t", "index"),
@@ -466,14 +488,14 @@ IInArchive = Interface(
             ],
         ),
         # x(GetNumberOfArchiveProperties(UInt32 *numProps))
-        Method(
+        CMethod(
             "GetNumberOfArchiveProperties",
             [
                 ("uint32_t *", "num_properties"),
             ],
         ),
         # x(GetArchivePropertyInfo(UInt32 index, BSTR *name, PROPID *propID, VARTYPE *varType))
-        Method(
+        CMethod(
             "GetArchivePropertyInfo",
             [
                 ("uint32_t", "index"),
@@ -488,11 +510,11 @@ IInArchive = Interface(
 
 ISetCompressCodecsInfo = Interface(
     "ISetCompressCodecsInfo",
-    Make7ZIID(0x40, 0x61),
+    make_7zip_iid(0x40, 0x61),
     IUnknown,
     [
         # x(SetCompressCodecsInfo(ICompressCodecsInfo *compressCodecsInfo))
-        Method(
+        CMethod(
             "SetCompressCodecsInfo",
             [
                 ("ICompressCodecsInfo *", "compress_codecs_info"),
