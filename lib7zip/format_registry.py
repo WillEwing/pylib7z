@@ -13,7 +13,13 @@ from uuid import UUID
 from . import ffi, lib
 from .propvariant import PropVariant
 
-__all__ = ("FormatFlag", "FormatProp", "FormatInfo")
+__all__ = (
+    "FormatFlag",
+    "FormatProp",
+    "FormatInfo",
+    "FormatRegistry",
+    "formats",
+)
 
 
 class FormatFlag(IntFlag):
