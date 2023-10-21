@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Python bindings for the 7-Zip Library: ArchiveOpenCallbacks
+Python bindings for the 7-Zip Library: archive open callbacks
 """
 
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
