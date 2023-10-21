@@ -9,6 +9,7 @@ import sys
 from uuid import UUID
 
 from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .hresult import HRESULT
 
 # IIDs
 
@@ -76,10 +77,46 @@ IID_IFolderProperties = UUID("23170f69-40c1-278a-0000-0008000e0000")
 IID_IFolderArcProps = UUID("23170f69-40c1-278a-0000-000800100000")
 IID_IGetFolderArcProps = UUID("23170f69-40c1-278a-0000-000800110000")
 
+
+# Marshall and unmarshall GUIDs
+
+
+def marshall_guid(guid: UUID) -> ffi.CData:
+    "Convert a Python UUID into a GUID."
+    result = ffi.new("GUID *")
+    ffi.buffer(result, 16)[:] = guid.bytes_le
+    return result
+
+
+def unmarshall_guid(pguid: ffi.CData) -> UUID:
+    "Convert a GUID into a Python UUID."
+    return UUID(bytes_le=ffi.buffer(pguid, 16)[:])
+
+
+# Create and release COM objects.
+
+
+def ReleaseObject(obj: ffi.CData) -> None:  # pylint: disable=invalid-name
+    "Release an IUnknown implementation."
+    if obj == ffi.NULL:
+        return
+    obj.vtable.Release(obj)
+
+
+def CreateObject(clsid: UUID, iid: UUID) -> ffi.CData:  # pylint: disable=invalid-name
+    "Create an Object of the specified class and interface id."
+    created_object_ptr = ffi.new("void **")
+    result = HRESULT(lib.CreateObject(marshall_guid(clsid), marshall_guid(iid), created_object_ptr))  # type: ignore
+    if result != HRESULT.S_OK:
+        raise RuntimeError(f"Failed to create object (clsid:{clsid},iid{iid}): {result}")
+    created_object = ffi.cast("FFI7Z_IUnknown *", created_object_ptr[0])
+    return ffi.gc(created_object, ReleaseObject)
+
+
 # Lookup helpers
 
 # TODO: There is almost certainly a better way to do this. Find it.
-IIDS_BY_NAME = {name[4:]: value for name, value in sys.modules[__name__].__dict__ if name.startswith("IID_")}
+IIDS_BY_NAME = {name[4:]: value for name, value in sys.modules[__name__].__dict__ if name.startswith("IID_")}  # type: ignore
 NAMES_BY_IID = {value: name for name, value in IIDS_BY_NAME}
 
 

@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Python base class for COM objects "PyUnknown"
+"""
+
 from typing import Dict, Tuple
 from uuid import UUID
 
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
-from .iids import IID_IUnknown, iid_python_impl_struct_name, iid_python_vtable_ptr
+from .iids import (
+    IID_IUnknown,
+    iid_python_impl_struct_name,
+    iid_python_vtable_ptr,
+    unmarshall_guid,
+)
 
 
 class PyUnknown:
@@ -36,7 +45,7 @@ class PyUnknown:
         """
         Try to get our instance of the interfaece specified by `iid_ref`.
         """
-        iid = UUID(bytes_le=ffi.buffer(iid_ref, 16)[:])
+        iid = unmarshall_guid(iid_ref)
         if instance := self.instances.get(iid, None):
             self.refs += 1
             out_ref[0] = instance
