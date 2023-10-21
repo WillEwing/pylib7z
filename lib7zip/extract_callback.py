@@ -1,24 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Python bindings for the 7-Zip Library: archive extract callbacks
+"""
+
+from enum import IntEnum
 from pathlib import Path
 
-from .ffi7z import (
-    HRESULT,
-    AskMode,
+from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .hresult import HRESULT
+from .iids import (
     IID_IArchiveExtractCallback,
     IID_ICompressProgressInfo,
     IID_ICryptoGetTextPassword,
     IID_ICryptoGetTextPassword2,
     IID_ISequentialOutStream,
-    IUnknownImpl,
-    ffi,
 )
-from .stream import FileOutStream, SimpleOutStream
+from .stream import FileOutStream, PyOutStream
+from .unknown import PyUnknown
 
 
-class ArchiveExtractCallback(IUnknownImpl):
-    """Base class for extract callbacks."""
+class AskMode(IntEnum):
+    """
+    Values for the ask_extract_mode parameter.
+    """
+
+    EXTRACT = 0
+    TEST = 1
+    SKIP = 2
+
+
+class ArchiveExtractCallback(PyUnknown):
+    """Base class for archive extract callbacks."""
+
+    # pylint: disable=invalid-name
 
     IIDS = (
         IID_IArchiveExtractCallback,
@@ -33,35 +49,32 @@ class ArchiveExtractCallback(IUnknownImpl):
         super().__init__()
 
     def SetTotal(self, total):
-        return HRESULT.S_OK.value
+        return HRESULT.S_OK
 
     def SetCompleted(self, complete_value):
-        return HRESULT.S_OK.value
+        return HRESULT.S_OK
 
     def SetRatioInfo(self, in_size, out_size):
-        return HRESULT.S_OK.value
+        return HRESULT.S_OK
 
     def GetStream(self, index, out_stream, ask_extract_mode):
-        raise NotImplementedError()
+        return HRESULT.E_NOTIMPL
 
     def PrepareOperation(self, ask_extract_mode):
-        return HRESULT.S_OK.value
-
-    def SetOperationResult(self, operation_result):
-        return HRESULT.S_OK.value
+        return HRESULT.S_OK
 
     def CryptoGetTextPassword(self, password):
-        password[0] = password_buf
-        return HRESULT.S_OK.value
+        password[0] = self.password_buf
 
     def CryptoGetTextPassword2(self, has_password, password):
-        has_password[0] = password is not None
-        password[0] = password_buf
-        return HRESULT.S_OK.value
+        has_password[0] = self.password is not None
+        password[0] = self.password_buf
 
 
 class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
-    """Archive extract callback that unpacks each item into a target directory."""
+    """Archive extract callback that unpacks into a directory."""
+
+    # pylint: disable=invalid-name
 
     def __init__(self, archive, directory, password):
         self.archive = archive
@@ -70,7 +83,7 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
         super().__init__(password)
 
     def GetStream(self, index, out_stream, ask_extract_mode):
-        if ask_extract_mode != AskMode.kExtract.value:
+        if ask_extract_mode != AskMode.EXTRACT:
             return HRESULT.S_OK.value
 
         if index in self.streams:
@@ -93,13 +106,17 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
 
 
 class ArchiveExtractToStreamCallback(ArchiveExtractCallback):
+    """Archive extract callback that unpacks everything into one stream."""
+
+    # pylint: disable=invalid-name
+
     def __init__(self, stream, index, password):
-        self.stream = SimpleOutStream(stream)
+        self.stream = PyOutStream(stream)
         self.index = index
         super().__init__(password)
 
     def GetStream(self, index, out_stream, ask_extract_mode):
-        if ask_extract_mode != AskMode.kExtract.value:
+        if ask_extract_mode != AskMode.EXTRACT:
             return HRESULT.S_OK.value
 
         if index == self.index:
