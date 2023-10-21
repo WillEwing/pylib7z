@@ -106,7 +106,7 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
         item = self.archive[index]
 
         path = self.directory / item.path
-        if not self.directory in (path, *path.parents):
+        if self.directory not in (path, *path.parents):
             return HRESULT.S_FALSE.value
 
         if item.is_dir:
