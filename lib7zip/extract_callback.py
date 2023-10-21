@@ -23,12 +23,23 @@ from .unknown import PyUnknown
 
 class AskMode(IntEnum):
     """
-    Values for the ask_extract_mode parameter.
+    Values for the ask_extract_mode argument in GetStream.
     """
 
     EXTRACT = 0
     TEST = 1
     SKIP = 2
+
+
+class OperationResult(IntEnum):
+    """
+    Values for the op_result argument in SetOperationResult.
+    """
+
+    OK = 0
+    UNSUPPORTED_METHOD = 1
+    DATA_ERROR = 2
+    CRC_ERROR = 3
 
 
 class ArchiveExtractCallback(PyUnknown):
@@ -55,6 +66,9 @@ class ArchiveExtractCallback(PyUnknown):
         return HRESULT.S_OK
 
     def SetRatioInfo(self, in_size, out_size):
+        return HRESULT.S_OK
+
+    def SetOperationResult(self, op_result):
         return HRESULT.S_OK
 
     def GetStream(self, index, out_stream, ask_extract_mode):
