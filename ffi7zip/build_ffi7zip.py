@@ -1,12 +1,15 @@
 #!/usr/bin/env python3.8
 # -*- coding: utf-8 -*-
 
-import os.path
+"""
+Python bindings for 7-zip: FFI Builder.
+"""
+
 from io import StringIO
-from typing import Dict, List, Optional
+from typing import Optional
 
 from cffi import FFI
-from setuptools import Command
+from setuptools import Command  # pylint: disable=import-error
 
 from .idlgen import append_cdefs, append_cimpl, append_thunk_pyimpls
 
@@ -57,5 +60,5 @@ class UpdateThunks(Command):
         thunks_path = "lib7zip/thunks.py"
         with open(thunks_path, "w", encoding="utf-8") as thunks_py:
             thunks_py.write("#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n\n")
-            thunks_py.write("from ffi7zip import lib, ffi\n\n")
+            thunks_py.write("from .ffi7zip import ffi\n\n")
             append_thunk_pyimpls(thunks_py)

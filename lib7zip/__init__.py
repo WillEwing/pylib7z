@@ -10,7 +10,11 @@ import os
 import os.path
 import sys
 
+from . import thunks  # noqa
 from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .format_registry import formats
+
+__all__ = ["formats"]
 
 
 def load_lib7z():
