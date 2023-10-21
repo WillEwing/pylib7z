@@ -6,7 +6,7 @@ from pathlib import Path
 from re import match
 from typing import Generator, TextIO
 
-from interfaces import *
+from .interfaces import *
 
 INTERFACES_BY_NAME = {interface.name: interface for interface in INTERFACES}
 
@@ -36,12 +36,22 @@ class InterfaceNames:
         self.interface = interface
 
 
-def format_decotype(decotype: DecoratedType) -> str:
-    return f"{decotype.dtype}{decotype.decor}"
+def mangle_dtype(typedecl: CTypeDecl) -> CTypeDecl:
+    """
+    Mangles interface names in CTypeDecls.
+    """
+    tokens = []
+    for token in typedecl.tokens:
+        interface_type = INTERFACES_BY_NAME.get(token, None)
+        if interface_type:
+            tokens.append(InterfaceNames(interface_type).opaque_impl_struct)
+        else:
+            tokens.append(token)
+    return CTypeDecl(tokens)
 
 
 def append_vtable_method_cdecl(stream: TextIO, method: Method) -> None:
-    args_str = ", ".join(("void* this", *(f"{format_decotype(dt)} {name}" for dt, name in method.arguments)))
+    args_str = ", ".join(("void* this", *(f"{mangle_dtype(dt)} {name}" for dt, name in method.arguments)))
     stream.write(f"    {method.return_type} (WINAPI * {method.name})({args_str});\n")
 
 
@@ -76,7 +86,7 @@ def thunk_name(interface, method) -> str:
 
 
 def append_thunk_method_cdecl(stream: TextIO, interface: Interface, method: Method) -> None:
-    args_str = ", ".join(("void* this", *(f"{format_decotype(dt)} {name}" for dt, name in method.arguments)))
+    args_str = ", ".join(("void* this", *(f"{mangle_dtype(dt)} {name}" for dt, name in method.arguments)))
     stream.write(f"{method.return_type} {thunk_name(interface, method)}({args_str});\n")
 
 
@@ -92,7 +102,7 @@ def append_thunk_cdecls(stream: TextIO) -> None:
 
 def append_thunk_vtable(stream: TextIO, interface: Interface) -> None:
     interface_names = InterfaceNames(interface)
-    stream.write(f"const {interface_names.vtable_struct} {interface_names.python_impl_vtable} {{\n")
+    stream.write(f"const {interface_names.vtable_struct} {interface_names.python_impl_vtable} = {{\n")
     for method_origin, method in interface.all_methods_with_origin:
         stream.write(f"    .{method.name} = {thunk_name(method_origin, method)},\n")
     stream.write(f"}};\n\n")
@@ -111,7 +121,7 @@ def append_common_cdecls(stream: TextIO) -> None:
 
 
 def append_static_cdefs(stream: TextIO) -> None:
-    stream.write(load_text("ffi77z_static.cdef"))
+    stream.write(load_text("ffi7z_static.cdef"))
 
 
 def append_cdefs(stream: TextIO) -> None:

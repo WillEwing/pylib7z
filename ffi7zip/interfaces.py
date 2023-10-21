@@ -3,9 +3,14 @@
 
 import re
 from dataclasses import dataclass
+from functools import cache, cached_property
 from struct import unpack_from
 from typing import Any, Generator, NamedTuple, Optional
 from uuid import UUID as GUID
+
+from pycparser.c_lexer import CLexer
+
+is_c_ident = re.compile("[A-Za-z_][0-9A-Za-z_]*").match
 
 
 def Make7ZIID(x, y) -> GUID:
@@ -14,33 +19,63 @@ def Make7ZIID(x, y) -> GUID:
     return GUID(f"{{23170F69-40C1-278A-0000-00{x:02x}00{y:02x}0000}}")
 
 
-class DecoratedType(NamedTuple):
+class CTypeDecl:
+    """
+    A tokenized of a (restricted subset of a) C type definition.
+    """
+
+    def __error_func(self, msg, start, end):
+        raise ValueError("%s [%d:%d]", msg, start, end)
+
+    def __unexpected(self, *args):
+        raise ValueError("Unexpected brace.")
+
+    def __assume_type_valid(self, *args):
+        return True
+
+    def __init__(self, raw_ctype_decl: str | list[str]) -> None:
+        if not isinstance(raw_ctype_decl, str):
+            raw_ctype_decl = " ".join(raw_ctype_decl)
+        lexer = CLexer(
+            error_func=self.__error_func,
+            on_lbrace_func=self.__unexpected,
+            on_rbrace_func=self.__unexpected,
+            type_lookup_func=self.__assume_type_valid,
+        )
+        lexer.build()
+        lexer.input(raw_ctype_decl)
+        self.tokens: list[str] = []
+        while True:
+            next_token = lexer.token()
+            if next_token is None:
+                break
+            self.tokens.append(next_token.value)
+
+    def __repr__(self) -> str:
+        self_str = str(self)
+        return f"{self.__class__.__name__}({self_str!r})"
+
+    @cache
     def __str__(self) -> str:
-        return f"{self.dtype}{self.decor}"
-
-    dtype: str
-    decor: str
-
-
-def parse_ctype(ctype: str) -> DecoratedType:
-    ctype = re.sub("\s+", "", ctype)
-    match = re.match("(?P<dtype>[A-Za-z_][0-9A-Za-z_]*)(?P<decor>.*)", ctype)
-    if not match:
-        raise ValueError("Bad data type.")
-    return DecoratedType(*match.groups())
+        value = ""
+        for token in self.tokens:
+            if value and is_c_ident(token):
+                value += " "
+            value += token
+        return value
 
 
 class Argument(NamedTuple):
-    dtype: DecoratedType
+    dtype: CTypeDecl
     name: str
 
 
 @dataclass
 class Method:
-    def __init__(self, name: str, arguments: list[tuple[str, str]], return_type: str = "HRESULT"):
+    def __init__(self, name: str, arguments: list[tuple[CTypeDecl | str, str]], return_type: str = "HRESULT"):
         self.name = name
         self.return_type = return_type
-        self.arguments = [Argument(parse_ctype(t), n) for t, n in arguments]
+        self.arguments = [(CTypeDecl(str(dtype)), name) for dtype, name in arguments]
 
     name: str
     arguments: list[Argument]
@@ -482,3 +517,9 @@ INTERFACES = [
     ICryptoGetTextPassword2,
     IInArchive,
 ]
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+
+    pprint(INTERFACES)

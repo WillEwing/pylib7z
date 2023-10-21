@@ -4,7 +4,8 @@
 from io import StringIO
 
 from cffi import FFI
-from idlgen import append_cdefs, append_cimpl
+
+from .idlgen import append_cdefs, append_cimpl
 
 
 def get_cimpl() -> str:
@@ -21,7 +22,7 @@ def get_cdefs() -> str:
 
 ffibuilder = FFI()
 ffibuilder.set_unicode(True)
-ffibuilder.set_source("lib7zip.ffi7z", get_cimpl(), libraries="Ole32")
+ffibuilder.set_source("lib7zip.ffi7zip", get_cimpl(), libraries=["Ole32"])
 ffibuilder.cdef(get_cdefs())
 
 
