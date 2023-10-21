@@ -1,90 +1,105 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Python bindings for the 7-Zip Library: IO Streams
+"""
+
+from os import PathLike
 from typing import BinaryIO
 
-from .ffi7z import (
-    HRESULT,
+from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .hresult import HRESULT
+from .iids import (
     IID_IInStream,
     IID_IOutStream,
     IID_ISequentialInStream,
     IID_ISequentialOutStream,
-    IUnknownImpl,
-    ffi,
 )
+from .unknown import PyUnknown
 
 
-class SimpleInStream(IUnknownImpl):
+class PyInStream(PyUnknown):
     """
-    Implementation of IInStream wrapping a Python BinaryIO object.
+    IInStream implemetation backed by a Python binary IO stream.
     """
+
+    # pylint: disable=invalid-name
 
     IIDS = (
-        IID_ISequentialInStream,
         IID_IInStream,
+        IID_ISequentialInStream,
     )
 
-    def __init__(self, stream):
+    def __init__(self, stream: BinaryIO) -> None:
         self.stream = stream
         super().__init__()
 
-    def Read(self, data, bytes_to_read, bytes_read_ptr):
-        buffer = ffi.buffer(data, bytes_to_read)
-        bytes_read = self.stream.readinto(buffer)
-        if bytes_read_ptr != ffi.NULL:
-            bytes_read_ptr[0] = bytes_read
-        return HRESULT.S_OK.value
+    def Read(self, array_ptr, bytes_to_read, bytes_read):
+        """Read from the stream."""
+        try:
+            array_buf = ffi.buffer(array_ptr, bytes_to_read)
+            bytes_read[0] = self.stream.readinto(array_buf)
+            return HRESULT.S_OK
+        except IOError:
+            return HRESULT.E_FAIL
 
-    def Seek(self, offset, origin, position_ptr):
-        position = self.stream.seek(offset, origin)
-        if position_ptr != ffi.NULL:
-            position_ptr[0] = position
-        return HRESULT.S_OK.value
+    def Seek(self, offset, origin, new_position):
+        """Seek to a new position in the stream."""
+        try:
+            new_position[0] = self.stream.seek(offset[0], origin[0])
+            return HRESULT.S_OK
+        except IOError:
+            return HRESULT.E_FAIL
 
 
-class FileInStream(SimpleInStream):
+class FileInStream(PyInStream):
     """
-    Implementation of IInStream against a file on-disk.
+    IInStream implemetation backed by a Python file stream.
     """
 
-    def __init__(self, filename):
-        stream = open(filename, "rb")
-        super().__init__(stream)
+    def __init__(self, filename: PathLike) -> None:
+        super().__init__(open(filename, "rb"))
 
 
-class SimpleOutStream(IUnknownImpl):
+class PyOutStream(PyUnknown):
     """
-    Implementation of IOutStream wrapping a Python BinaryIO object.
+    IOutStream implemetation backed by a Python binary IO stream.
     """
+
+    # pylint: disable=invalid-name
 
     IIDS = (
-        IID_ISequentialOutStream,
         IID_IOutStream,
+        IID_ISequentialOutStream,
     )
 
-    def __init__(self, stream):
+    def __init__(self, stream: BinaryIO) -> None:
         self.stream = stream
         super().__init__()
 
-    def Write(self, data, bytes_to_write, bytes_written_ptr):
-        buffer = ffi.buffer(data, bytes_to_write)
-        bytes_written = self.stream.write(buffer)
-        if bytes_written_ptr != ffi.NULL:
-            bytes_written_ptr[0] = bytes_written
-        return HRESULT.S_OK.value
+    def Write(self, array_ptr, bytes_to_write, bytes_written):
+        """Write bytes to the stream."""
+        try:
+            array_buf = ffi.buffer(array_ptr, bytes_to_write)
+            bytes_written[0] = self.stream.write(array_buf)
+            return HRESULT.S_OK
+        except IOError:
+            return HRESULT.E_FAIL
 
-    def Seek(self, offset, origin, position_ptr):
-        position = self.stream.seek(offset, origin)
-        if position_ptr != ffi.NULL:
-            position_ptr[0] = position
-        return HRESULT.S_OK.value
+    def Seek(self, offset, origin, new_position):
+        """Seek to a new position in the stream."""
+        try:
+            new_position[0] = self.stream.seek(offset[0], origin[0])
+            return HRESULT.S_OK
+        except IOError:
+            return HRESULT.E_FAIL
 
 
-class FileOutStream(SimpleOutStream):
+class FileOutStream(PyOutStream):
     """
-    Implementation of IOutStream against a file on-disk.
+    IOutStream implemetation backed by a Python file stream.
     """
 
-    def __init__(self, filename):
-        stream = open(filename, "wb")
-        super().__init__(stream)
+    def __init__(self, filename: PathLike) -> None:
+        super().__init__(open(filename, "wb"))
