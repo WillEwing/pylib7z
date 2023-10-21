@@ -225,7 +225,7 @@ def append_thunk_method_pyimpl(stream: TextIO, interface: CInterface, method: CM
     self_args_string = ", ".join(name for _, name in ((None, "self"), *method.arguments))
     stream.write(f"@ffi.def_extern()\ndef {thunk_name(interface, method)}({this_args_string}):\n")
     stream.write(f'    self = ffi.from_handle(ffi.cast("{InterfaceNames(interface).python_impl_struct} *", this)[0].self_handle)\n')
-    stream.write(f"    self.{method.name}({self_args_string})\n\n")
+    stream.write(f"    return self.{method.name}({self_args_string})\n\n")
 
 
 def append_interface_thunk_pyimpl(stream: TextIO, interface: CInterface) -> None:
