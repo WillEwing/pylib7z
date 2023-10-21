@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 from dataclasses import dataclass
 from struct import unpack_from
-from typing import Optional
+from typing import Any, Generator, NamedTuple, Optional
 from uuid import UUID as GUID
-
-import pycparser
-
-Argument = tuple[str, str]
 
 
 def Make7ZIID(x, y) -> GUID:
@@ -17,16 +14,37 @@ def Make7ZIID(x, y) -> GUID:
     return GUID(f"{{23170F69-40C1-278A-0000-00{x:02x}00{y:02x}0000}}")
 
 
+class DecoratedType(NamedTuple):
+    def __str__(self) -> str:
+        return f"{self.dtype}{self.decor}"
+
+    dtype: str
+    decor: str
+
+
+def parse_ctype(ctype: str) -> DecoratedType:
+    ctype = re.sub("\s+", "", ctype)
+    match = re.match("(?P<dtype>[A-Za-z_][0-9A-Za-z_]*)(?P<decor>.*)", ctype)
+    if not match:
+        raise ValueError("Bad data type.")
+    return DecoratedType(*match.groups())
+
+
+class Argument(NamedTuple):
+    dtype: DecoratedType
+    name: str
+
+
 @dataclass
 class Method:
+    def __init__(self, name: str, arguments: list[tuple[str, str]], return_type: str = "HRESULT"):
+        self.name = name
+        self.return_type = return_type
+        self.arguments = [Argument(parse_ctype(t), n) for t, n in arguments]
+
     name: str
     arguments: list[Argument]
     return_type: str
-
-    def __init__(self, name: str, arguments: list[Argument], return_type="HRESULT") -> None:
-        self.name = name
-        self.arguments = arguments
-        self.return_type = return_type
 
 
 @dataclass
@@ -37,45 +55,14 @@ class Interface:
     methods: list[Method]
 
     @property
-    def vtable_name(self) -> str:
-        return f"FFI7Z_{self.name}_vtable"
-
-    @property
-    def base_struct_name(self) -> str:
-        return f"FFI7Z_{self.name}"
-
-    @property
-    def py_impl_struct_name(self) -> str:
-        return f"FFI7Z_Py{self.name}"
-
-    @property
-    def all_methods(self) -> list[Method]:
+    def all_methods_with_origin(self) -> Generator[tuple["Interface", Method], None, None]:
         if self.parent:
-            return self.parent.all_methods + self.methods
-        return self.methods
+            yield from self.parent.all_methods_with_origin
+        yield from ((self, method) for method in self.methods)
 
     @property
-    def all_methods_with_origin(self) -> list[tuple["Interface", Method]]:
-        methods_with_origin = [(self, method) for method in self.methods]
-        if self.parent:
-            methods_with_origin = self.parent.all_methods_with_origin + methods_with_origin
-        return methods_with_origin
-
-
-# Minimum necessary set of interfaces for archive extraction:
-# - IArchiveExtractCallback
-# - IArchiveOpenCallback
-# - IArchiveOpenSetSubArchiveName
-# - IArchiveOpenVolumeCallback
-# - ICompressProgressInfo
-# - ICryptoGetTextPassword
-# - ICryptoGetTextPassword2
-# - IInArchive
-# - IInStream
-# - IOutStream
-# - ISequentialInStream
-# - ISequentialOutStream
-# - IUnknown
+    def all_methods(self) -> Generator[Method, None, None]:
+        yield from (method for intf, method in self.all_methods_with_origin)
 
 
 IUnknown = Interface(
@@ -203,7 +190,7 @@ IArchiveExtractCallback = Interface(
             "GetStream",
             [
                 ("uint32_t", "index"),
-                (f"{ISequentialOutStream.base_struct_name} **", "out_stream"),
+                ("ISequentialOutStream **", "out_stream"),
                 ("int32_t", "ask_extract_mode"),
             ],
         ),
@@ -281,7 +268,7 @@ IArchiveOpenVolumeCallback = Interface(
             "GetStream",
             [
                 ("const wchar_t *", "name"),
-                (f"{IInStream.base_struct_name} **", "in_stream"),
+                ("IInStream **", "in_stream"),
             ],
         ),
     ],
@@ -385,9 +372,9 @@ IInArchive = Interface(
         Method(
             "Open",
             [
-                (f"{IInStream.base_struct_name} *", "stream"),
+                ("IInStream *", "stream"),
                 ("const uint64_t *", "max_check_start_position"),
-                (f"{IArchiveOpenCallback.base_struct_name} *", "open_callback"),
+                ("IArchiveOpenCallback *", "open_callback"),
             ],
         ),
         # x(Close())
@@ -415,7 +402,7 @@ IInArchive = Interface(
                 ("const uint32_t *", "indices"),
                 ("uint32_t", "num_items"),
                 ("int32_t", "test_mode"),
-                (f"{IArchiveExtractCallback.base_struct_name} *", "extract_callback"),
+                ("IArchiveExtractCallback *", "extract_callback"),
             ],
         ),
         # x(GetArchiveProperty(PROPID propID, PROPVARIANT *value))
@@ -473,7 +460,7 @@ ISetCompressCodecsInfo = Interface(
         Method(
             "SetCompressCodecsInfo",
             [
-                (f"{ICompressCodecsInfo.base_struct_name} *", "compress_codecs_info"),
+                ("ICompressCodecsInfo *", "compress_codecs_info"),
             ],
         )
     ],
@@ -495,100 +482,3 @@ INTERFACES = [
     ICryptoGetTextPassword2,
     IInArchive,
 ]
-
-
-def gen_common():
-    for interface in INTERFACES:
-        yield f"typedef struct {interface.vtable_name}_tag {{"
-        for method in interface.all_methods:
-            method_args = ", ".join(f"{a} {b}" for a, b in (("void*", "self"), *method.arguments))
-            yield f"    {method.return_type} (WINAPI *{method.name})({method_args});"
-        yield f"}} {interface.vtable_name};"
-        yield ""
-        yield f"typedef struct {interface.base_struct_name}_tag {{"
-        yield f"    {interface.vtable_name} * vtable;"
-        yield f"}} {interface.base_struct_name};"
-        yield ""
-        yield f"typedef struct {interface.py_impl_struct_name}_tag {{"
-        yield f"    {interface.vtable_name} * vtable;"
-        yield f"    void * pyobject_handle;"
-        yield f"}} {interface.py_impl_struct_name};"
-        yield ""
-
-
-def gen_cdefs():
-    yield ("/* - BEGIN GENERATED CDEFS - */")
-    yield from gen_common()
-    yield ""
-    for interface in INTERFACES:
-        # yield f"const GUID FFI7Z_IID_{interface.name};"
-        yield f"const {interface.vtable_name} {interface.py_impl_struct_name}_vtable;"
-    yield ""
-    yield 'extern "Python" {'
-    for interface in INTERFACES:
-        for method in interface.methods:
-            args_str = ", ".join(f"{a} {b}" for a, b in (("void*", "self"), *method.arguments))
-            yield f"{method.return_type} WINAPI FFI7Z_Py_{interface.name}_{method.name}({args_str});"
-    yield "}"
-    yield ("/* - END GENERATED CDEFS - */")
-
-
-def make_cdefs():
-    return "\n".join(gen_cdefs())
-
-
-def gen_cimpl():
-    yield ("/* - BEGIN GENERATED CIMPL - */")
-    yield from gen_common()
-    yield ""
-    for interface in INTERFACES:
-        for method in interface.methods:
-            args_str = ", ".join(f"{a} {b}" for a, b in (("void*", "self"), *method.arguments))
-            yield f"{method.return_type} WINAPI FFI7Z_Py_{interface.name}_{method.name}({args_str});"
-    yield ""
-    for interface in INTERFACES:
-        yield f"const {interface.vtable_name} {interface.py_impl_struct_name}_vtable = {{"
-        for origin_intf, method in interface.all_methods_with_origin:
-            yield f"  .{method.name} = FFI7Z_Py_{origin_intf.name}_{method.name},"
-        yield f"}};"
-        yield ""
-    yield ("/* - END GENERATED CIMPL - */")
-
-
-def make_cimpl():
-    return "\n".join(gen_cimpl())
-
-
-def gen_py_thunks():
-    yield "#!/usr/bin/env python"
-    yield "# -*- coding: utf-8 -*-"
-    yield ""
-    yield "from ._ffi7z import lib, ffi"
-    yield ""
-    for interface in INTERFACES:
-        for method in interface.methods:
-            yield f"@ffi.def_extern()"
-            args_string = ", ".join(f"{b}" for a, b in (("void *", "this"), *method.arguments))
-            pass_args_string = ", ".join(f"{b}" for a, b in method.arguments)
-            yield f"def FFI7Z_Py_{interface.name}_{method.name}({args_string}):"
-            yield f'    this_struct = ffi.cast("{interface.py_impl_struct_name} *", this)'
-            yield f"    self = ffi.from_handle(this_struct[0].pyobject_handle)"
-            yield f"    return self.{method.name}({pass_args_string})"
-            yield ""
-
-
-def make_py_thunks():
-    return "\n".join(gen_py_thunks())
-
-
-def main():
-    with open("ffi7z_com.cdef", "w", encoding="utf-8") as cdefs_file:
-        cdefs_file.write(make_cdefs())
-    with open("ffi7z_com.inl", "w", encoding="utf-8") as cimpl_file:
-        cimpl_file.write(make_cimpl())
-    with open("ffi7z_thunk.py", "w", encoding="utf-8") as pythunk_file:
-        pythunk_file.write(make_py_thunks())
-
-
-if __name__ == "__main__":
-    main()
