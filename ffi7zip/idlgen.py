@@ -24,7 +24,7 @@ else:
 
     def load_text(filename: str) -> str:
         """Load text from module resource."""
-        return importlib.resources.files().joinpath(filename).read_text()
+        return importlib.resources.files(__package__).joinpath(filename).read_text()
 
 
 class InterfaceNames:
@@ -215,3 +215,29 @@ def append_cimpl(stream: TextIO) -> None:
     append_thunk_cdecls(stream)
     stream.write("\n")
     append_thunk_vtables(stream)
+
+
+def append_thunk_method_pyimpl(stream: TextIO, interface: CInterface, method: CMethod) -> None:
+    """
+    Append thunk method declarations for `interface`.`method` to `stream`.
+    """
+    args_string = ", ".join(name for _, name in method.arguments)
+    stream.write(f"@ffi.def_extern()\ndef {thunk_name(interface, method)}(self_handle, {args_string}):\n")
+    stream.write(f'    self = ffi.from_handle(ffi.cast("{InterfaceNames(interface).python_impl_struct} *")[0].self_handle)\n')
+    stream.write(f"    self.{method.name}({args_string})\n\n")
+
+
+def append_interface_thunk_pyimpl(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append thunk method declarations for `interface` to `stream`.
+    """
+    for method in interface.methods:
+        append_thunk_method_pyimpl(stream, interface, method)
+
+
+def append_thunk_pyimpls(stream: TextIO) -> None:
+    """
+    Append thunk method declarations to `stream`.
+    """
+    for interface in INTERFACES:
+        append_interface_thunk_pyimpl(stream, interface)
