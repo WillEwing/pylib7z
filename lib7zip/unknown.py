@@ -12,6 +12,7 @@ from .ffi7zip import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IUnknown,
+    iid_opaque_impl_struct_name,
     iid_python_impl_struct_name,
     iid_python_vtable_ptr,
     unmarshall_guid,
@@ -41,16 +42,22 @@ class PyUnknown:
         instance[0].self_handle = self.handle
         self.instances[iid] = instance
 
+    def get_instance(self, iid: UUID) -> ffi.CData:
+        """Get the interface struct corresponding to `idd`."""
+        instance = self.instances[iid]
+        return ffi.cast(f"{iid_opaque_impl_struct_name(iid)}*", instance)
+
     def QueryInterface(self, iid_ref, out_ref) -> HRESULT:
         """
         Try to get our instance of the interfaece specified by `iid_ref`.
         """
         iid = unmarshall_guid(iid_ref)
-        if instance := self.instances.get(iid, None):
+        try:
+            instance = self.get_instance(iid)
             self.refs += 1
             out_ref[0] = instance
             return HRESULT.S_OK
-        else:
+        except KeyError:
             out_ref[0] = ffi.NULL
             return HRESULT.E_NOINTERFACE
 
