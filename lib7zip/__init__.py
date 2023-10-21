@@ -1,95 +1,51 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
 Python bindings for the 7-Zip Library
 """
 
-import logging
+import ctypes.util
+import os
+import os.path
+import sys
 
-log = logging.getLogger("lib7zip")
-
-from dataclasses import dataclass
-
-from .ffi7z import *
-
-
-@dataclass
-class Method:
-    id: int
-    name: str
-    encoder: GUID | None
-    decoder: GUID | None
+from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 
 
-def get_method_info(index: int) -> Method:
-    encoder_is_assigned = GetMethodProperty(index, MethodProps.kEncoderIsAssigned)
-    decoder_is_assigned = GetMethodProperty(index, MethodProps.kDecoderIsAssigned)
-    return Method(
-        id=GetMethodProperty(index, MethodProps.kID),
-        name=GetMethodProperty(index, MethodProps.kName),
-        encoder=GetMethodProperty(index, MethodProps.kEncoder, UnwrapPropGUID) if encoder_is_assigned else None,
-        decoder=GetMethodProperty(index, MethodProps.kDecoder, UnwrapPropGUID) if decoder_is_assigned else None,
-    )
+def load_lib7z():
+    """
+    Find and load the 7-zip DLL.
+    """
+    dll_paths = []
 
+    if "7ZDLL_PATH" in os.environ:
+        dll_paths.append(os.environ["7ZDLL_PATH"])
 
-def get_methods() -> list[Method]:
-    num_methods = GetNumberOfMethods()
-    return [get_method_info(index) for index in range(num_methods)]
-
-
-@dataclass
-class Format:
-    index: int
-    name: str
-    classid: GUID
-    extensions: tuple[str, ...]
-    signatures: tuple[bytes, ...]
-    signature_offset: int
-
-
-def unpack_multi_signature(packed: bytes) -> tuple[bytes, ...]:
-    offset = 0
-    signatures = []
-    while offset < len(packed):
-        size = packed[offset]
-        next_offset = offset + size + 1
-        signatures.append(packed[offset + 1, next_offset])
-        offset = next_offset
-    return tuple(signatures)
-
-
-def get_format_info(index: int) -> Format:
-    signatures = tuple()
-
-    if not signatures:
+    if sys.platform == "win32":
         try:
-            signatures = GetFormatProperty(index, FormatProps.kMultiSignature, UnwrapPropMultiSig)
-        except PropUnwrapError:
+            from winreg import (  # pylint: disable=import-outside-toplevel
+                HKEY_LOCAL_MACHINE,
+                KEY_READ,
+                OpenKey,
+                QueryValueEx,
+            )
+
+            key = OpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\7-zip", 0, KEY_READ)
+            install_dir = QueryValueEx(key, "Path")[0]
+            dll_paths.append(os.path.join(install_dir, "7z.dll"))
+        except WindowsError:
             pass
 
-    if not signatures:
-        try:
-            signatures = (GetFormatProperty(index, FormatProps.kSignature, UnwrapPropBytesZ),)
-        except PropUnwrapError:
-            pass
+    if found_lib := ctypes.util.find_library("7z"):
+        dll_paths.append(found_lib)
 
-    return Format(
-        index=index,
-        name=GetFormatProperty(index, FormatProps.kName),
-        classid=GetFormatProperty(index, FormatProps.kClassID, UnwrapPropGUID),
-        extensions=tuple(GetFormatProperty(index, FormatProps.kExtension).split()),
-        signatures=signatures,
-        signature_offset=GetFormatProperty(index, FormatProps.kSignatureOffset),
-    )
+    for dll_path in dll_paths:
+        hresult = lib.InitModule(dll_path)
+        if hresult >= 0:
+            break
+    else:
+        raise RuntimeError("Could not load 7-zip library.")
 
 
-def get_formats() -> list[Format]:
-    num_formats = GetNumberOfFormats()
-    return [get_format_info(index) for index in range(num_formats)]
-
-
-methods = get_methods()
-formats = get_formats()
-
-
-from .archive import Archive, ArchiveItem
+ffi.init_once(load_lib7z, __package__)
