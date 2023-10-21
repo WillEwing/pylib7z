@@ -12,9 +12,6 @@ import sys
 
 from . import thunks  # noqa
 from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
-from .format_registry import formats
-
-__all__ = ["formats"]
 
 
 def load_lib7z():
@@ -53,3 +50,6 @@ def load_lib7z():
 
 
 ffi.init_once(load_lib7z, __package__)
+
+
+from .archive import Archive, ArchiveItem  # pylint: disable=wrong-import-position
