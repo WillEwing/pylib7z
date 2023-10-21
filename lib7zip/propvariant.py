@@ -97,6 +97,14 @@ class PropVariant:
             return int(self.cdata.uintVal)  # type: ignore
         raise TypeError(f"Not an integer: {self.vartype}.")
 
+    def as_bool(self) -> bool:
+        """
+        Get the packed booleean.
+        """
+        if self.vartype == VARTYPE.VT_BOOL:
+            return bool(self.cdata.boolVal)  # type: ignore
+        raise TypeError(f"Not a boolean: {self.vartype}.")
+
     def as_string(self) -> str:
         """
         Get the packed string.
