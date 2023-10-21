@@ -77,6 +77,32 @@ IID_IFolderProperties = UUID("23170f69-40c1-278a-0000-0008000e0000")
 IID_IFolderArcProps = UUID("23170f69-40c1-278a-0000-000800100000")
 IID_IGetFolderArcProps = UUID("23170f69-40c1-278a-0000-000800110000")
 
+# Lookup helpers
+
+# TODO: There is almost certainly a better way to do this. Find it.
+IIDS_BY_NAME = {name[4:]: value for name, value in sys.modules[__name__].__dict__.items() if name.startswith("IID_")}  # type: ignore
+NAMES_BY_IID = {value: name for name, value in IIDS_BY_NAME.items()}
+
+
+def iid_opaque_impl_struct_name(iid: UUID) -> str:
+    """Get the name of the opaque implemtation struct corresponding to `iid`."""
+    name = NAMES_BY_IID[iid]
+    return f"FFI7Z_{name}"
+
+
+def iid_python_impl_struct_name(iid: UUID) -> str:
+    """Get the name of the python implemtation struct corresponding to `iid`."""
+    name = NAMES_BY_IID[iid]
+    return f"FFI7Z_Py{name}"
+
+
+def iid_python_vtable_ptr(iid: UUID) -> ffi.CData:
+    """Get a pointer to the python thunk vtable corresponding to `iid`."""
+    interface_name = NAMES_BY_IID[iid]
+    vtable_name = f"FFI7Z_Py{interface_name}_vtable"
+    vtable = getattr(lib, vtable_name)
+    return ffi.addressof(vtable)
+
 
 # Marshall and unmarshall GUIDs
 
@@ -109,32 +135,5 @@ def CreateObject(clsid: UUID, iid: UUID) -> ffi.CData:  # pylint: disable=invali
     result = HRESULT(lib.CreateObject(marshall_guid(clsid), marshall_guid(iid), created_object_ptr))  # type: ignore
     if result != HRESULT.S_OK:
         raise RuntimeError(f"Failed to create object (clsid:{clsid},iid{iid}): {result}")
-    created_object = ffi.cast("FFI7Z_IUnknown *", created_object_ptr[0])
+    created_object = ffi.cast(f"{iid_opaque_impl_struct_name(iid)} *", created_object_ptr[0])
     return ffi.gc(created_object, ReleaseObject)
-
-
-# Lookup helpers
-
-# TODO: There is almost certainly a better way to do this. Find it.
-IIDS_BY_NAME = {name[4:]: value for name, value in sys.modules[__name__].__dict__ if name.startswith("IID_")}  # type: ignore
-NAMES_BY_IID = {value: name for name, value in IIDS_BY_NAME}
-
-
-def iid_opaque_impl_struct_name(iid: UUID) -> str:
-    """Get the name of the opaque implemtation struct corresponding to `iid`."""
-    name = NAMES_BY_IID[iid]
-    return f"FFI7Z_{name}"
-
-
-def iid_python_impl_struct_name(iid: UUID) -> str:
-    """Get the name of the python implemtation struct corresponding to `iid`."""
-    name = NAMES_BY_IID[iid]
-    return f"FFI7Z_Py{name}"
-
-
-def iid_python_vtable_ptr(iid: UUID) -> ffi.CData:
-    """Get a pointer to the python thunk vtable corresponding to `iid`."""
-    interface_name = NAMES_BY_IID[iid]
-    vtable_name = f"FFI7Z_Py{interface_name}_vtable"
-    vtable = getattr(lib, vtable_name)
-    return ffi.addressof(vtable)
