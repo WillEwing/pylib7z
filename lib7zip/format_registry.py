@@ -170,6 +170,7 @@ class FormatRegistry(Sequence[FormatInfo]):
     def __getitem__(self, index: int) -> FormatInfo:  # type: ignore
         if isinstance(index, int):
             return FormatInfo(index)
+        raise TypeError()
 
 
 formats = FormatRegistry()
