@@ -5,19 +5,26 @@
 Generate C source and definitions, and Python thunks from `interfaces.py`
 """
 
-from pathlib import Path
+
+import importlib.resources
+import sys
 from typing import TextIO
 
 from .interfaces import INTERFACES, CInterface, CMethod, CTypeDecl
 
 INTERFACES_BY_NAME = {interface.name: interface for interface in INTERFACES}
 
+if tuple(sys.version_info[:2]) < (3, 11):
 
-def load_text(filename: str) -> str:
-    """
-    Load text from a file. Filenames are relative to this source file.
-    """
-    return (Path(__file__).parent / filename).read_text("utf-8")
+    def load_text(filename: str) -> str:
+        """Load text from module resource."""
+        return importlib.resources.read_text(__package__, filename)
+
+else:
+
+    def load_text(filename: str) -> str:
+        """Load text from module resource."""
+        return importlib.resources.files().joinpath(filename).read_text()
 
 
 class InterfaceNames:
