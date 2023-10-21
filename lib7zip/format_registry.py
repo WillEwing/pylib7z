@@ -10,7 +10,7 @@ from enum import IntEnum, IntFlag
 from typing import Tuple
 from uuid import UUID
 
-from . import ffi, lib
+from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 from .propvariant import PropVariant
 
 __all__ = (
