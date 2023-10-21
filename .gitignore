@@ -19,3 +19,6 @@ build/
 *.pyd
 venv/
 *.whl
+
+# Ignore generated thunks.py
+lib7zip/thunks.py
