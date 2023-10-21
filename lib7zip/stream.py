@@ -47,7 +47,9 @@ class PyInStream(PyUnknown):
     def Seek(self, offset, origin, new_position):
         """Seek to a new position in the stream."""
         try:
-            new_position[0] = self.stream.seek(offset[0], origin[0])
+            position = self.stream.seek(offset, origin)
+            if new_position != ffi.NULL:
+                new_position[0] = position
             return HRESULT.S_OK
         except IOError:
             return HRESULT.E_FAIL
@@ -90,7 +92,9 @@ class PyOutStream(PyUnknown):
     def Seek(self, offset, origin, new_position):
         """Seek to a new position in the stream."""
         try:
-            new_position[0] = self.stream.seek(offset[0], origin[0])
+            position = self.stream.seek(offset, origin)
+            if new_position != ffi.NULL:
+                new_position[0] = position
             return HRESULT.S_OK
         except IOError:
             return HRESULT.E_FAIL
