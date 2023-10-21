@@ -8,4 +8,7 @@ version = "0.2.0"
 dependencies = ["cffi"]
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+packages = ["lib7zip"]
+
+[tool.isort]
+profile = "black"
