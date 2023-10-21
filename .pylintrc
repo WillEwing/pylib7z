@@ -1,0 +1,11 @@
+[MAIN]
+# Ignore these directories, or risk OOM.
+ignore =
+    .*
+    venv
+    build
+    __pycache__
+
+# Disable format checking in favor of `black`.
+disable =
+    format
