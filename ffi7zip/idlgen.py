@@ -1,38 +1,59 @@
 #!/usr/bin/env python3.8
 # -*- coding: utf-8 -*-
 
-from dataclasses import dataclass
-from pathlib import Path
-from re import match
-from typing import Generator, TextIO
+"""
+Generate C source and definitions, and Python thunks from `interfaces.py`
+"""
 
-from .interfaces import *
+from pathlib import Path
+from typing import TextIO
+
+from .interfaces import INTERFACES, CInterface, CMethod, CTypeDecl
 
 INTERFACES_BY_NAME = {interface.name: interface for interface in INTERFACES}
 
 
 def load_text(filename: str) -> str:
+    """
+    Load text from a file. Filenames are relative to this source file.
+    """
     return (Path(__file__).parent / filename).read_text("utf-8")
 
 
 class InterfaceNames:
+    """
+    Helper class to get interface struct and instance names.
+    """
+
     @property
     def vtable_struct(self) -> str:
+        """
+        Virtual function table struct name.
+        """
         return f"FFI7Z_{self.interface.name}_vtable"
 
     @property
     def opaque_impl_struct(self) -> str:
+        """
+        Opaque implementation struct name.
+        """
         return f"FFI7Z_{self.interface.name}"
 
     @property
     def python_impl_struct(self) -> str:
+        """
+        Python implementation struct name.
+        """
         return f"FFI7Z_Py{self.interface.name}"
 
     @property
     def python_impl_vtable(self) -> str:
+        """
+        Python implemenation vtable instance name.
+        """
         return f"FFI7Z_Py{self.interface.name}_vtable"
 
-    def __init__(self, interface: Interface) -> None:
+    def __init__(self, interface: CInterface) -> None:
         self.interface = interface
 
 
@@ -50,12 +71,18 @@ def mangle_dtype(typedecl: CTypeDecl) -> CTypeDecl:
     return CTypeDecl(tokens)
 
 
-def append_vtable_method_cdecl(stream: TextIO, method: Method) -> None:
+def append_vtable_method_cdecl(stream: TextIO, method: CMethod) -> None:
+    """
+    Append declaration of vtable method `method` to `stream`.
+    """
     args_str = ", ".join(("void* this", *(f"{mangle_dtype(dt)} {name}" for dt, name in method.arguments)))
     stream.write(f"    {method.return_type} (WINAPI * {method.name})({args_str});\n")
 
 
-def append_vtable_interface_cdecl(stream: TextIO, interface: Interface) -> None:
+def append_vtable_interface_cdecl(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append declaration of vtable struct for `interface` to `stream`.
+    """
     interface_names = InterfaceNames(interface)
     stream.write(f"typedef struct {interface_names.vtable_struct}_tag {{")
     if interface.all_methods:
@@ -65,55 +92,82 @@ def append_vtable_interface_cdecl(stream: TextIO, interface: Interface) -> None:
     stream.write(f"}} {interface_names.vtable_struct};\n\n")
 
 
-def append_opaque_impl_cdecl(stream: TextIO, interface: Interface) -> None:
+def append_opaque_impl_cdecl(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append declaration of opaque implementation struct for `interface` to `stream`.
+    """
     interface_names = InterfaceNames(interface)
     stream.write(f"typedef struct {interface_names.opaque_impl_struct}_tag {{\n")
     stream.write(f"    {interface_names.vtable_struct}* vtable;\n")
     stream.write(f"}} {interface_names.opaque_impl_struct};\n\n")
 
 
-def append_python_impl_cdecl(stream: TextIO, interface: Interface) -> None:
+def append_python_impl_cdecl(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append declaration of Python implementation struct and vtable for `interface` to `stream`.
+    """
     interface_names = InterfaceNames(interface)
     stream.write(f"typedef struct {interface_names.python_impl_struct}_tag {{\n")
     stream.write(f"    {interface_names.vtable_struct}* vtable;\n")
-    stream.write(f"    void *self_handle;\n")
+    stream.write("    void *self_handle;\n")
     stream.write(f"}} {interface_names.python_impl_struct};\n\n")
     stream.write(f"const {interface_names.vtable_struct} {interface_names.python_impl_vtable};\n\n")
 
 
 def thunk_name(interface, method) -> str:
+    """
+    Get the name of a the thunk for `interface`.`method`.
+    """
     return f"FFI7Z_Py_{interface.name}_{method.name}"
 
 
-def append_thunk_method_cdecl(stream: TextIO, interface: Interface, method: Method) -> None:
+def append_thunk_method_cdecl(stream: TextIO, interface: CInterface, method: CMethod) -> None:
+    """
+    Append thunk method declarations for `interface`.`method` to `stream`.
+    """
     args_str = ", ".join(("void* this", *(f"{mangle_dtype(dt)} {name}" for dt, name in method.arguments)))
     stream.write(f"{method.return_type} {thunk_name(interface, method)}({args_str});\n")
 
 
-def append_interface_thunk_cdecls(stream: TextIO, interface: Interface) -> None:
+def append_interface_thunk_cdecls(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append thunk method declarations for `interface` to `stream`.
+    """
     for method in interface.methods:
         append_thunk_method_cdecl(stream, interface, method)
 
 
 def append_thunk_cdecls(stream: TextIO) -> None:
+    """
+    Append thunk method declarations to `stream`.
+    """
     for interface in INTERFACES:
         append_interface_thunk_cdecls(stream, interface)
 
 
-def append_thunk_vtable(stream: TextIO, interface: Interface) -> None:
+def append_thunk_vtable(stream: TextIO, interface: CInterface) -> None:
+    """
+    Append the thunk vtable definition for `interface` to `stream`.
+    """
     interface_names = InterfaceNames(interface)
     stream.write(f"const {interface_names.vtable_struct} {interface_names.python_impl_vtable} = {{\n")
     for method_origin, method in interface.all_methods_with_origin:
         stream.write(f"    .{method.name} = {thunk_name(method_origin, method)},\n")
-    stream.write(f"}};\n\n")
+    stream.write("};\n\n")
 
 
 def append_thunk_vtables(stream: TextIO) -> None:
+    """
+    Append thunk vtable definitions to `stream`.
+    """
     for interface in INTERFACES:
         append_thunk_vtable(stream, interface)
 
 
 def append_common_cdecls(stream: TextIO) -> None:
+    """
+    Append common C declarations to `stream`.
+    """
     for interface in INTERFACES:
         append_vtable_interface_cdecl(stream, interface)
         append_opaque_impl_cdecl(stream, interface)
@@ -121,10 +175,16 @@ def append_common_cdecls(stream: TextIO) -> None:
 
 
 def append_static_cdefs(stream: TextIO) -> None:
+    """
+    Append static C definitions to `stream`.
+    """
     stream.write(load_text("ffi7z_static.cdef"))
 
 
 def append_cdefs(stream: TextIO) -> None:
+    """
+    Append C definitions to `stream`.
+    """
     append_static_cdefs(stream)
     append_common_cdecls(stream)
     stream.write('extern "Python" {\n')
@@ -133,23 +193,18 @@ def append_cdefs(stream: TextIO) -> None:
 
 
 def append_static_cimpl(stream: TextIO) -> None:
+    """
+    Append the static C sources to `stream`.
+    """
     stream.write(load_text("ffi7z_static.c"))
 
 
 def append_cimpl(stream: TextIO) -> None:
+    """
+    Append C sources to `stream`.
+    """
     append_static_cimpl(stream)
     append_common_cdecls(stream)
     append_thunk_cdecls(stream)
     stream.write("\n")
     append_thunk_vtables(stream)
-
-
-def main() -> None:
-    from sys import stdout
-
-    append_cimpl(stdout)
-    pass
-
-
-if __name__ == "__main__":
-    main()

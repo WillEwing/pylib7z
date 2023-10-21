@@ -95,14 +95,14 @@ class CMethod:
 
 
 @dataclass
-class Interface:
+class CInterface:
     """
     An interface definition.
     """
 
     name: str
     guid: GUID
-    parent: Optional["Interface"]
+    parent: Optional["CInterface"]
     methods: List[CMethod]
 
     @property
@@ -122,7 +122,7 @@ class Interface:
         yield from (method for intf, method in self.all_methods_with_origin)
 
 
-IUnknown = Interface(
+IUnknown = CInterface(
     "IUnknown",
     GUID("{00000000-0000-0000-C000-000000000046}"),
     None,
@@ -151,7 +151,7 @@ IUnknown = Interface(
     ],
 )
 
-ISequentialInStream = Interface(
+ISequentialInStream = CInterface(
     "ISequentialInStream",
     make_7zip_iid(0x03, 0x01),
     IUnknown,
@@ -167,7 +167,7 @@ ISequentialInStream = Interface(
     ],
 )
 
-IInStream = Interface(
+IInStream = CInterface(
     "IInStream",
     make_7zip_iid(0x03, 0x03),
     ISequentialInStream,
@@ -183,7 +183,7 @@ IInStream = Interface(
     ],
 )
 
-ISequentialOutStream = Interface(
+ISequentialOutStream = CInterface(
     "ISequentialOutStream",
     make_7zip_iid(0x03, 0x02),
     IUnknown,
@@ -199,7 +199,7 @@ ISequentialOutStream = Interface(
     ],
 )
 
-IOutStream = Interface(
+IOutStream = CInterface(
     "IOutStream",
     make_7zip_iid(0x03, 0x05),
     ISequentialOutStream,
@@ -215,7 +215,7 @@ IOutStream = Interface(
     ],
 )
 
-IProgress = Interface(
+IProgress = CInterface(
     "IProgress",
     make_7zip_iid(0x00, 0x05),
     IUnknown,
@@ -237,7 +237,7 @@ IProgress = Interface(
     ],
 )
 
-IArchiveExtractCallback = Interface(
+IArchiveExtractCallback = CInterface(
     "IArchiveExtractCallback",
     make_7zip_iid(0x06, 0x20),
     IProgress,
@@ -268,7 +268,7 @@ IArchiveExtractCallback = Interface(
     ],
 )
 
-IArchiveOpenCallback = Interface(
+IArchiveOpenCallback = CInterface(
     "IArchiveOpenCallback",
     make_7zip_iid(0x06, 0x10),
     IUnknown,
@@ -292,7 +292,7 @@ IArchiveOpenCallback = Interface(
     ],
 )
 
-IArchiveOpenSetSubArchiveName = Interface(
+IArchiveOpenSetSubArchiveName = CInterface(
     "IArchiveOpenSetSubArchiveName",
     make_7zip_iid(0x06, 0x50),
     IUnknown,
@@ -307,7 +307,7 @@ IArchiveOpenSetSubArchiveName = Interface(
     ],
 )
 
-IArchiveOpenVolumeCallback = Interface(
+IArchiveOpenVolumeCallback = CInterface(
     "IArchiveOpenVolumeCallback",
     make_7zip_iid(0x06, 0x30),
     IUnknown,
@@ -331,7 +331,7 @@ IArchiveOpenVolumeCallback = Interface(
     ],
 )
 
-ICompressCodecsInfo = Interface(
+ICompressCodecsInfo = CInterface(
     "ICompressCodecsInfo",
     make_7zip_iid(0x04, 0x60),
     IUnknown,
@@ -373,7 +373,7 @@ ICompressCodecsInfo = Interface(
     ],
 )
 
-ICompressProgressInfo = Interface(
+ICompressProgressInfo = CInterface(
     "ICompressProgressInfo",
     make_7zip_iid(0x04, 0x04),
     IUnknown,
@@ -389,7 +389,7 @@ ICompressProgressInfo = Interface(
     ],
 )
 
-ICryptoGetTextPassword = Interface(
+ICryptoGetTextPassword = CInterface(
     "ICryptoGetTextPassword",
     make_7zip_iid(0x05, 0x10),
     IUnknown,
@@ -404,7 +404,7 @@ ICryptoGetTextPassword = Interface(
     ],
 )
 
-ICryptoGetTextPassword2 = Interface(
+ICryptoGetTextPassword2 = CInterface(
     "ICryptoGetTextPassword2",
     make_7zip_iid(0x05, 0x11),
     IUnknown,
@@ -420,7 +420,7 @@ ICryptoGetTextPassword2 = Interface(
     ],
 )
 
-IInArchive = Interface(
+IInArchive = CInterface(
     "IInArchive",
     make_7zip_iid(0x06, 0x60),
     IUnknown,
@@ -508,7 +508,7 @@ IInArchive = Interface(
 )
 
 
-ISetCompressCodecsInfo = Interface(
+ISetCompressCodecsInfo = CInterface(
     "ISetCompressCodecsInfo",
     make_7zip_iid(0x40, 0x61),
     IUnknown,
