@@ -6,13 +6,17 @@ Python bindings for the 7-Zip Library: Archives
 """
 
 from enum import IntEnum
+from io import BytesIO
 from os import SEEK_SET, PathLike
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generator, Optional, Self, Sequence, Type
+from typing import Generator, Optional, Self, Sequence, Type, Union
 from weakref import ReferenceType, ref
 
-from .extract_callback import ArchiveExtractToDirectoryCallback
+from .extract_callback import (
+    ArchiveExtractToDirectoryCallback,
+    ArchiveExtractToStreamCallback,
+)
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
 from .format_registry import FormatInfo, formats
 from .iids import (
@@ -144,11 +148,12 @@ class Archive:
 
     closed: bool
 
-    def __init__(self, filename: PathLike) -> None:
+    def __init__(self, filename: PathLike, *, password: Union[None, str, bytes] = None) -> None:
         self.filename = filename
+        self.password = password
 
         self.stream = FileInStream(filename)
-        self.open_callback = ArchiveOpenCallback()
+        self.open_callback = ArchiveOpenCallback(password=password, stream=self.stream)
 
         for fmt in self.__get_possible_formats():
             if self.__try_open_as_format(fmt):
@@ -238,8 +243,28 @@ class Archive:
         extract_callback = ArchiveExtractToDirectoryCallback(archive=self, directory=dest_dir, password=None)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)
+        extract_callback.cleanup()
         if result < 0:
             raise RuntimeError(f"HRESULT(0x{result:#08x})")
+
+    def read_item_bytes(self, item: "ArchiveItem", *, password: Union[None, str, bytes] = None) -> bytes:
+        if item.archive() != self:
+            raise ValueError()
+
+        item_ptr = ffi.new("uint32_t*", item.index)
+
+        item_stream = BytesIO()
+        archive = self.archive
+        extract_callback = ArchiveExtractToStreamCallback(item_stream, item.index, password)
+        extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
+        result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)
+        if result < 0:
+            raise RuntimeError(f"HRESULT(0x{result:#08x})")
+        extract_callback.cleanup()
+        return item_stream.getvalue()
+
+    def read_item_text(self, item: "ArchiveItem", encoding: str = "utf-8", *, password: Union[None, str, bytes] = None) -> str:
+        return str(self.read_item_bytes(item, password=password), encoding=encoding)
 
 
 class ArchiveItem:
@@ -249,6 +274,8 @@ class ArchiveItem:
     index: int
 
     def __init__(self, archive: Archive, index: int) -> None:
+        if not (0 <= index < len(archive)):
+            raise IndexError
         self.archive = ref(archive)
         self.index = index
 
@@ -263,6 +290,18 @@ class ArchiveItem:
             raise RuntimeError()
         return prop_var
 
+    def read_bytes(self, *, password: Union[None, str, bytes] = None) -> bytes:
+        archive = self.archive()
+        if not archive or archive.closed:
+            raise RuntimeError()
+        return archive.read_item_bytes(self, password=password)
+
+    def read_text(self, encoding: str = "utf-8", *, password: Union[None, str, bytes] = None) -> str:
+        archive = self.archive()
+        if not archive or archive.closed:
+            raise RuntimeError()
+        return archive.read_item_text(self, encoding, password=password)
+
     @property
     def path(self) -> str:
         """The path of the item."""
@@ -272,3 +311,11 @@ class ArchiveItem:
     def is_dir(self) -> bool:
         """is the item a directory."""
         return self.__get_property(ArchiveProps.IS_DIR).as_bool()
+
+    @property
+    def crc(self) -> Optional[int]:
+        """Item CRC"""
+        prop_var = self.__get_property(ArchiveProps.CRC)
+        if not prop_var.has_value:
+            return None
+        return prop_var.as_int()
