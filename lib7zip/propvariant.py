@@ -5,9 +5,12 @@
 Python bindings for 7-zip: PROPVARIANT
 """
 
+from datetime import UTC, datetime, timedelta
 from enum import IntEnum
-from typing import Tuple
+from typing import Tuple, Union
 from uuid import UUID
+
+from cffi.api import FFI
 
 from . import ffi, lib
 
@@ -52,7 +55,7 @@ class PropVariant:
     """
 
     def __init__(self) -> None:
-        self.cdata = ffi.gc(lib.CreatePropVariant(), lib.DeletePropVariant)  # type: ignore
+        self.cdata: ffi.CData = ffi.gc(lib.CreatePropVariant(), lib.DeletePropVariant)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.cdata!r}; contains {self.vartype.name}>"
@@ -69,48 +72,51 @@ class PropVariant:
         """
         Check if the PROPVARIANT contains a value.
         """
-        return self.vartype != VARTYPE.VT_EMPTY
+        return self.cdata.vt != VARTYPE.VT_EMPTY
 
     def as_int(self) -> int:
         """
         Get the packed integer.
         """
-        if self.vartype == VARTYPE.VT_I1:
+        vt = self.cdata.vt
+        if vt == VARTYPE.VT_I1:
             return int(self.cdata.cVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_I2:
+        if vt == VARTYPE.VT_I2:
             return int(self.cdata.iVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_I4:
+        if vt == VARTYPE.VT_I4:
             return int(self.cdata.lVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_I8:
+        if vt == VARTYPE.VT_I8:
             return int(self.cdata.hVal.QuadPart)  # type: ignore
-        if self.vartype == VARTYPE.VT_INT:
+        if vt == VARTYPE.VT_INT:
             return int(self.cdata.intVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_UI1:
+        if vt == VARTYPE.VT_UI1:
             return int(self.cdata.bVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_UI2:
+        if vt == VARTYPE.VT_UI2:
             return int(self.cdata.uiVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_UI4:
+        if vt == VARTYPE.VT_UI4:
             return int(self.cdata.ulVal)  # type: ignore
-        if self.vartype == VARTYPE.VT_UI8:
+        if vt == VARTYPE.VT_UI8:
             return int(self.cdata.uhVal.QuadPart)  # type: ignore
-        if self.vartype == VARTYPE.VT_UINT:
+        if vt == VARTYPE.VT_UINT:
             return int(self.cdata.uintVal)  # type: ignore
-        raise TypeError(f"Not an integer: {self.vartype}.")
+        raise TypeError(f"Not an integer: {vt}.")
 
     def as_bool(self) -> bool:
         """
         Get the packed booleean.
         """
-        if self.vartype == VARTYPE.VT_BOOL:
+        vt = self.cdata.vt
+        if vt == VARTYPE.VT_BOOL:
             return bool(self.cdata.boolVal)  # type: ignore
-        raise TypeError(f"Not a boolean: {self.vartype}.")
+        raise TypeError(f"Not a boolean: {vt}.")
 
     def as_string(self) -> str:
         """
         Get the packed string.
         """
-        if self.vartype != VARTYPE.VT_BSTR:
-            raise TypeError(f"Not a string: {self.vartype}.")
+        vt = self.cdata.vt
+        if vt != VARTYPE.VT_BSTR:
+            raise TypeError(f"Not a string: {vt}.")
         result = ffi.string(self.cdata.bstrVal)  # type:ignore
         assert isinstance(result, str)
         return result
@@ -119,8 +125,9 @@ class PropVariant:
         """
         Get the packed bytestring.
         """
-        if self.vartype != VARTYPE.VT_BSTR:
-            raise TypeError(f"Not a bytestring: {self.vartype}.")
+        vt = self.cdata.vt
+        if vt != VARTYPE.VT_BSTR:
+            raise TypeError(f"Not a bytestring: {vt}.")
         result = ffi.string(ffi.cast("const uint8_t *", self.cdata.bstrVal))  # type: ignore
         assert isinstance(result, bytes)
         return result
@@ -129,8 +136,9 @@ class PropVariant:
         """
         Get the packed byte string array.
         """
-        if self.vartype != VARTYPE.VT_BSTR:
-            raise TypeError(f"Not a packed byte string array: {self.vartype}.")
+        vt = self.cdata.vt
+        if vt != VARTYPE.VT_BSTR:
+            raise TypeError(f"Not a packed byte string array: {vt}.")
         array = ffi.cast("const uint8_t *", self.cdata.bstrVal)  # type: ignore
 
         offset = 0
@@ -145,6 +153,54 @@ class PropVariant:
         """
         Get the packed UUID.
         """
-        if self.vartype != VARTYPE.VT_BSTR:
-            raise TypeError(f"Not a UUID: {self.vartype}.")
+        vt = self.cdata.vt
+        if vt != VARTYPE.VT_BSTR:
+            raise TypeError(f"Not a UUID: {vt}.")
         return UUID(bytes_le=ffi.buffer(self.cdata.bstrVal, 16)[:])  # type: ignore
+
+    def as_datetime(self) -> datetime:
+        """
+        Get the packed datetime.
+        """
+        vt = self.cdata.vt
+        if vt == VARTYPE.VT_DATE:
+            return datetime(1899, 12, 31) + timedelta(days=float(self.cdata.dblVal))
+        if vt == VARTYPE.VT_FILETIME:
+            return datetime(1601, 1, 1, tzinfo=UTC) + timedelta(microseconds=int(self.cdata.uhVal.QuadPart * 100))
+        raise TypeError(f"Not a packed datetime: {vt}.")
+
+    def as_any(self) -> Union[None, bool, int, datetime, str]:
+        vt = self.cdata.vt
+        if vt in (VARTYPE.VT_EMPTY, VARTYPE.VT_NULL):
+            return None
+        if vt == VARTYPE.VT_BOOL:
+            return bool(self.cdata.boolVal)  # type: ignore
+        if vt == VARTYPE.VT_I1:
+            return int(self.cdata.cVal)  # type: ignore
+        if vt == VARTYPE.VT_I2:
+            return int(self.cdata.iVal)  # type: ignore
+        if vt == VARTYPE.VT_I4:
+            return int(self.cdata.lVal)  # type: ignore
+        if vt == VARTYPE.VT_I8:
+            return int(self.cdata.hVal.QuadPart)  # type: ignore
+        if vt == VARTYPE.VT_INT:
+            return int(self.cdata.intVal)  # type: ignore
+        if vt == VARTYPE.VT_UI1:
+            return int(self.cdata.bVal)  # type: ignore
+        if vt == VARTYPE.VT_UI2:
+            return int(self.cdata.uiVal)  # type: ignore
+        if vt == VARTYPE.VT_UI4:
+            return int(self.cdata.ulVal)  # type: ignore
+        if vt == VARTYPE.VT_UI8:
+            return int(self.cdata.uhVal.QuadPart)  # type: ignore
+        if vt == VARTYPE.VT_UINT:
+            return int(self.cdata.uintVal)  # type: ignore
+        if vt == VARTYPE.VT_BSTR:
+            strval = ffi.string(self.cdata.bstrVal)  # type:ignore
+            assert isinstance(strval, str)
+            return strval
+        if vt == VARTYPE.VT_DATE:
+            return datetime(1899, 12, 31) + timedelta(days=float(self.cdata.dblVal))
+        if vt == VARTYPE.VT_FILETIME:
+            return datetime(1601, 1, 1, tzinfo=UTC) + timedelta(microseconds=int(self.cdata.uhVal.QuadPart * 100))
+        raise TypeError(f"Unknown or unhandled VARTYPE: {vt}")
