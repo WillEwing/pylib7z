@@ -126,7 +126,7 @@ def ReleaseObject(obj: ffi.CData) -> None:  # pylint: disable=invalid-name
     "Release an IUnknown implementation."
     if obj == ffi.NULL:
         return
-    obj.vtable.Release(obj)
+    obj.vtable.Release(obj)  # type: ignore
 
 
 def CreateObject(clsid: UUID, iid: UUID) -> ffi.CData:  # pylint: disable=invalid-name
