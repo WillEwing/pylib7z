@@ -12,6 +12,7 @@ from tempfile import mkdtemp
 import pytest
 
 from lib7zip import Archive, ArchiveItem
+from lib7zip.archive import ExtractError
 
 log = logging.getLogger("lib7zip")
 
@@ -78,12 +79,18 @@ def test_extract_dir_complex(tmpdir):
 
 @pytest.mark.parametrize("path", SIMPLE_ARCHIVES)
 def test_extract_stream(path):
+    """
+    Files can be extracted to a stream.
+    """
     with Archive(path) as archive:
         assert archive[0].read_text() == "Hello World!\n"
 
 
 @pytest.mark.parametrize("path", SIMPLE_ARCHIVES)
 def test_extract_dir(path, tmpdir):
+    """
+    Files can be extracted to a directory.
+    """
     with Archive(path) as archive:
         archive.extract(tmpdir)
 
@@ -91,33 +98,30 @@ def test_extract_dir(path, tmpdir):
         assert f.read() == b"Hello World!\n"
 
 
-@pytest.mark.xfail()
 def test_extract_with_pass():
+    """
+    Files can be extracted with a password.
+    """
     with Archive("tests/simple_crypt.7z") as archive:
         assert archive[0].path == "hello.txt"
         archive[0].read_text(password="password") == "Hello World!\n"
 
 
-@pytest.mark.xfail()
-def test_extract_with_pass_dir(tmdir):
+def test_extract_with_pass_dir(tmpdir):
+    """
+    Files can be extracted to a directory with a password.
+    """
     with Archive("tests/simple_crypt.7z", password="password") as archive:
-        archive.extract(tmdir)
+        archive.extract(tmpdir)
 
-    with open(os.path.join(tmdir, "hello.txt"), "rb") as f:
+    with open(os.path.join(tmpdir, "hello.txt"), "rb") as f:
         assert f.read() == b"Hello World!\n"
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+@pytest.mark.xfail(raises=ExtractError)
 def test_extract_badpass():
+    """
+    Files can't be extracted with a wrong password.
+    """
     with Archive("tests/simple_crypt.7z") as archive:
         archive[0].read_bytes(password="notthepass")
-
-
-def main():
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    logging.getLogger("ffi7zip.thunks").info("Hello?")
-    test_extract_badpass()
-
-
-if __name__ == "__main__":
-    main()
