@@ -8,6 +8,7 @@ Generate C source and definitions, and Python thunks from `interfaces.py`
 
 import importlib.resources
 import sys
+from string import Template
 from typing import TextIO
 
 from .interfaces import INTERFACES, CInterface, CMethod, CTypeDecl
@@ -217,15 +218,56 @@ def append_cimpl(stream: TextIO) -> None:
     append_thunk_vtables(stream)
 
 
+PYIMPL_HRESULT_THUNK_TEMPLATE = Template(
+    """
+@ffi.def_extern()
+def $thunk_name($this_args_string):
+    try:
+        self = ffi.from_handle(ffi.cast("$impl_struct_name *", this)[0].self_handle)
+        return self.$method_name($self_args_string)
+    except (TypeError, ValueError):
+        log.exception("Unhandled exception in thunk callback")
+        return HRESULT.E_INVALIDARG
+    except NotImplementedError:
+        log.exception("Unhandled exception in thunk callback")
+        return HRESULT.E_NOTIMPL
+    except Exception:
+        log.exception("Unhandled exception in thunk callback")
+        return HRESULT.E_UNEXPECTED
+"""
+)
+
+PYIMPL_OTHER_THUNK_TEMPLATE = Template(
+    """
+@ffi.def_extern()
+def $thunk_name($this_args_string):
+    try:
+        self = ffi.from_handle(ffi.cast("$impl_struct_name *", this)[0].self_handle)
+        return self.$method_name($self_args_string)
+    except Exception:
+        log.exception("Unhandled exception in thunk callback")
+
+"""
+)
+
+
 def append_thunk_method_pyimpl(stream: TextIO, interface: CInterface, method: CMethod) -> None:
     """
     Append thunk method declarations for `interface`.`method` to `stream`.
     """
-    this_args_string = ", ".join(name for _, name in ((None, "this"), *method.arguments))
-    self_args_string = ", ".join(name for _, name in method.arguments)
-    stream.write(f"@ffi.def_extern()\ndef {thunk_name(interface, method)}({this_args_string}):\n")
-    stream.write(f'    self = ffi.from_handle(ffi.cast("{InterfaceNames(interface).python_impl_struct} *", this)[0].self_handle)\n')
-    stream.write(f"    return self.{method.name}({self_args_string})\n\n")
+
+    template = PYIMPL_HRESULT_THUNK_TEMPLATE if method.return_type == "HRESULT" else PYIMPL_OTHER_THUNK_TEMPLATE
+    stream.write(
+        template.substitute(
+            dict(
+                this_args_string=", ".join(name for _, name in ((None, "this"), *method.arguments)),
+                self_args_string=", ".join(name for _, name in method.arguments),
+                impl_struct_name=InterfaceNames(interface).python_impl_struct,
+                method_name=method.name,
+                thunk_name=thunk_name(interface, method),
+            )
+        )
+    )
 
 
 def append_interface_thunk_pyimpl(stream: TextIO, interface: CInterface) -> None:

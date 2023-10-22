@@ -70,10 +70,16 @@ typedef struct PROPVARIANTtag
     };
 } PROPVARIANT;
 
+/* PROPVARIANT (de)allocation */
 PROPVARIANT *CreatePropVariant();
-
 void DeletePropVariant(PROPVARIANT *pvar);
 
+/* BSTR (de)allocation */
+BSTR SysAllocStringLen(const wchar_t * string, unsigned int len);
+BSTR SysAllocStringByteLen(const char * string, unsigned int len);
+void SysFreeString(BSTR);
+
+/* 7-zip API wrapper */
 HRESULT InitModule(const wchar_t *lib7zip_path);
 HRESULT CreateObject(const GUID *clsid, const GUID *iid, void **out_object);
 HRESULT GetNumberOfFormats(uint32_t *num_formats);

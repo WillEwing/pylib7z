@@ -34,7 +34,7 @@ def get_cdefs() -> str:
 
 ffibuilder = FFI()
 ffibuilder.set_unicode(True)
-ffibuilder.set_source("lib7zip.ffi7zip", get_cimpl(), libraries=["Ole32"])
+ffibuilder.set_source("lib7zip.ffi7zip", get_cimpl(), libraries=["Ole32", "OleAut32"])
 ffibuilder.cdef(get_cdefs())
 
 
@@ -60,5 +60,14 @@ class UpdateThunks(Command):
         thunks_path = "lib7zip/thunks.py"
         with open(thunks_path, "w", encoding="utf-8") as thunks_py:
             thunks_py.write("#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n\n")
-            thunks_py.write("from .ffi7zip import ffi\n\n")
+            thunks_py.write(
+                """
+from .ffi7zip import ffi
+from .hresult import HRESULT
+from logging import getLogger
+
+log = getLogger("ffi7zip.thunks")
+
+"""
+            )
             append_thunk_pyimpls(thunks_py)
