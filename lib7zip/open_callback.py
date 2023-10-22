@@ -5,7 +5,7 @@
 Python bindings for the 7-Zip Library: archive open callbacks
 """
 
-from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IArchiveOpenCallback,
@@ -33,7 +33,6 @@ class ArchiveOpenCallback(PyUnknown):
 
     def __init__(self, password=None, stream=None):
         self.password = password
-        self.password_buf = ffi.new("wchar_t []", password) if password else ffi.NULL
         self.stream = stream
         self.subarchive_name = None
         super().__init__()
@@ -45,7 +44,10 @@ class ArchiveOpenCallback(PyUnknown):
         return HRESULT.S_OK
 
     def CryptoGetTextPassword(self, password_ptr):
-        password_ptr[0] = self.password_buf
+        if self.password:
+            password_ptr[0] = lib.SysAllocStringLen(self.password, len(self.password))
+        else:
+            password_ptr[0] = ffi.NULL
         return HRESULT.S_OK
 
     def GetProperty(self, prop_id, value):
