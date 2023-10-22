@@ -143,12 +143,32 @@ class ArchiveProps(IntEnum):
     USER_DEFINED = 0x10000  # kpidUserDefined
 
 
+class ArchiveError(RuntimeError):
+    pass
+
+
+class ArchiveClosedError(ArchiveError):
+    pass
+
+
+class ExtractError(ArchiveError):
+    pass
+
+
+class NotAFileError(ExtractError):
+    pass
+
+
+class NotThisArchiveError(ArchiveError):
+    pass
+
+
 class Archive:
     """An archive."""
 
     closed: bool
 
-    def __init__(self, filename: PathLike, *, password: Union[None, str, bytes] = None) -> None:
+    def __init__(self, filename: Union[PathLike, str], *, password: Union[None, str, bytes] = None) -> None:
         self.filename = filename
         self.password = password
 
@@ -189,6 +209,8 @@ class Archive:
         return True
 
     def __len__(self) -> int:
+        if self.closed:
+            raise ArchiveClosedError()
         number_of_items = ffi.new("uint32_t *")
         result = self.archive.vtable.GetNumberOfItems(self.archive, number_of_items)
         if result < 0:
@@ -196,6 +218,9 @@ class Archive:
         return number_of_items[0]
 
     def __getitem__(self, index):
+        if self.closed:
+            raise ArchiveClosedError()
+
         if not (0 <= index < len(self)):
             raise IndexError()
         return ArchiveItem(self, index)
@@ -222,12 +247,15 @@ class Archive:
         item_indices: set[int] = set()
         for item in items:
             if item.archive() != self:
-                raise ValueError()
+                raise NotThisArchiveError()
             item_indices.add(item.index)
         return sorted(item_indices)
 
     def extract(self, dest_dir: PathLike, items: Optional[Sequence["ArchiveItem"]] = None) -> None:
         """Extract files into a directory."""
+        if self.closed:
+            raise ArchiveClosedError()
+
         if not items and items is not None:
             # The caller has specified which files to extract, and it's none of them.
             return
@@ -245,9 +273,12 @@ class Archive:
         result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)
         extract_callback.cleanup()
         if result < 0:
-            raise RuntimeError(f"HRESULT(0x{result:#08x})")
+            raise ExtractError(f"HRESULT(0x{result:#08x})")
 
     def read_item_bytes(self, item: "ArchiveItem", *, password: Union[None, str, bytes] = None) -> bytes:
+        """Read `item` as bytes."""
+        if self.closed:
+            raise ArchiveClosedError()
         if item.archive() != self:
             raise ValueError()
 
@@ -259,11 +290,12 @@ class Archive:
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)
         if result < 0:
-            raise RuntimeError(f"HRESULT(0x{result:#08x})")
+            raise ExtractError(f"HRESULT(0x{result:#08x})")
         extract_callback.cleanup()
         return item_stream.getvalue()
 
     def read_item_text(self, item: "ArchiveItem", encoding: str = "utf-8", *, password: Union[None, str, bytes] = None) -> str:
+        """Read `item` as text."""
         return str(self.read_item_bytes(item, password=password), encoding=encoding)
 
 
@@ -282,7 +314,7 @@ class ArchiveItem:
     def __get_property(self, prop_id) -> PropVariant:
         archive = self.archive()
         if not archive or archive.closed:
-            raise RuntimeError()
+            raise ArchiveClosedError()
 
         prop_var = PropVariant()
         result = archive.archive.vtable.GetProperty(archive.archive, self.index, prop_id, prop_var.cdata)
@@ -291,15 +323,17 @@ class ArchiveItem:
         return prop_var
 
     def read_bytes(self, *, password: Union[None, str, bytes] = None) -> bytes:
+        """Read the contents of the item as a bytes."""
         archive = self.archive()
         if not archive or archive.closed:
-            raise RuntimeError()
+            raise ArchiveClosedError()
         return archive.read_item_bytes(self, password=password)
 
     def read_text(self, encoding: str = "utf-8", *, password: Union[None, str, bytes] = None) -> str:
+        """Read the contents of the item as a string."""
         archive = self.archive()
         if not archive or archive.closed:
-            raise RuntimeError()
+            raise ArchiveClosedError()
         return archive.read_item_text(self, encoding, password=password)
 
     @property
