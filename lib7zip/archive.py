@@ -5,19 +5,20 @@
 Python bindings for the 7-Zip Library: Archives
 """
 
-from enum import IntEnum
+from enum import KEEP, IntEnum, IntFlag
 from io import BytesIO
+from logging import getLogger
 from os import SEEK_SET, PathLike
 from pathlib import Path
 from types import TracebackType
-from typing import Generator, Optional, Self, Sequence, Type, Union
+from typing import Any, Dict, Generator, Optional, Self, Sequence, Type, Union
 from weakref import ReferenceType, ref
 
 from .extract_callback import (
     ArchiveExtractToDirectoryCallback,
     ArchiveExtractToStreamCallback,
 )
-from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 from .format_registry import FormatInfo, formats
 from .iids import (
     CreateObject,
@@ -27,120 +28,141 @@ from .iids import (
     IID_IInStream,
 )
 from .open_callback import ArchiveOpenCallback
-from .propvariant import PropVariant
+from .propvariant import VARTYPE, PropVariant
 from .stream import FileInStream
+
+log = getLogger("lib7zip")
 
 
 class ArchiveProps(IntEnum):
-    """Archive and Archive Item Propertys"""
+    """Archive and ArchiveItem Properties"""
 
-    NO_PROPERTY = 0  # kpidNoProperty
-    MAIN_SUBFILE = 1  # kpidMainSubfile
-    HANDLER_ITEM_INDEX = 2  # kpidHandlerItemIndex
-    PATH = 3  # kpidPath
-    NAME = 4  # kpidName
-    EXTENSION = 5  # kpidExtension
-    IS_DIR = 6  # kpidIsDir
-    SIZE = 7  # kpidSize
-    PACK_SIZE = 8  # kpidPackSize
-    ATTRIB = 9  # kpidAttrib
-    CTIME = 10  # kpidCTime
-    ATIME = 11  # kpidATime
-    MTIME = 12  # kpidMTime
-    SOLID = 13  # kpidSolid
-    COMMENTED = 14  # kpidCommented
-    ENCRYPTED = 15  # kpidEncrypted
-    SPLIT_BEFORE = 16  # kpidSplitBefore
-    SPLIT_AFTER = 17  # kpidSplitAfter
-    DICTIONARY_SIZE = 18  # kpidDictionarySize
-    CRC = 19  # kpidCRC
-    TYPE = 20  # kpidType
-    IS_ANTI = 21  # kpidIsAnti
-    METHOD = 22  # kpidMethod
-    HOST_OS = 23  # kpidHostOS
-    FILE_SYSTEM = 24  # kpidFileSystem
-    USER = 25  # kpidUser
-    GROUP = 26  # kpidGroup
-    BLOCK = 27  # kpidBlock
-    COMMENT = 28  # kpidComment
-    POSITION = 29  # kpidPosition
-    PREFIX = 30  # kpidPrefix
-    NUM_SUB_DIRS = 31  # kpidNumSubDirs
-    NUM_SUB_FILES = 32  # kpidNumSubFiles
-    UNPACK_VER = 33  # kpidUnpackVer
-    VOLUME = 34  # kpidVolume
-    IS_VOLUME = 35  # kpidIsVolume
-    OFFSET = 36  # kpidOffset
-    LINKS = 37  # kpidLinks
-    NUM_BLOCKS = 38  # kpidNumBlocks
-    NUM_VOLUMES = 39  # kpidNumVolumes
-    TIME_TYPE = 40  # kpidTimeType
-    BIT64 = 41  # kpidBit64
-    BIG_ENDIAN = 42  # kpidBigEndian
-    CPU = 43  # kpidCpu
-    PHY_SIZE = 44  # kpidPhySize
-    HEADERS_SIZE = 45  # kpidHeadersSize
-    CHECKSUM = 46  # kpidChecksum
-    CHARACTS = 47  # kpidCharacts
-    VA = 48  # kpidVa
-    ID = 49  # kpidId
-    SHORT_NAME = 50  # kpidShortName
-    CREATOR_APP = 51  # kpidCreatorApp
-    SECTOR_SIZE = 52  # kpidSectorSize
-    POSIX_ATTRIB = 53  # kpidPosixAttrib
-    SYMLINK = 54  # kpidSymLink
-    ERROR = 55  # kpidError
-    TOTAL_SIZE = 56  # kpidTotalSize
-    FREE_SPACE = 57  # kpidFreeSpace
-    CLUSTER_SIZE = 58  # kpidClusterSize
-    VOLUME_NAME = 59  # kpidVolumeName
-    LOCAL_NAME = 60  # kpidLocalName
-    PROVIDER = 61  # kpidProvider
-    NT_SECURE = 62  # kpidNtSecure
-    IS_ALT_STREAM = 63  # kpidIsAltStream
-    IS_AUX = 64  # kpidIsAux
-    IS_DELETED = 65  # kpidIsDeleted
-    IS_TREE = 66  # kpidIsTree
-    SHA1 = 67  # kpidSha1
-    SHA256 = 68  # kpidSha256
-    ERROR_TYPE = 69  # kpidErrorType
-    NUM_ERRORS = 70  # kpidNumErrors
-    ERROR_FLAGS = 71  # kpidErrorFlags
-    WARNING_FLAGS = 72  # kpidWarningFlags
-    WARNING = 73  # kpidWarning
-    NUM_STREAMS = 74  # kpidNumStreams
-    NUM_ALT_STREAMS = 75  # kpidNumAltStreams
-    ALT_STREAMS_SIZE = 76  # kpidAltStreamsSize
-    VIRTUAL_SIZE = 77  # kpidVirtualSize
-    UNPACK_SIZE = 78  # kpidUnpackSize
-    TOTAL_PHY_SIZE = 79  # kpidTotalPhySize
-    VOLUME_INDEX = 80  # kpidVolumeIndex
-    SUB_TYPE = 81  # kpidSubType
-    SHORT_COMMENT = 82  # kpidShortComment
-    CODE_PAGE = 83  # kpidCodePage
-    IS_NOT_ARC_TYPE = 84  # kpidIsNotArcType
-    PHY_SIZE_CANT_BE_DETECTED = 85  # kpidPhySizeCantBeDetected
-    ZEROS_TAIL_IS_ALLOWED = 86  # kpidZerosTailIsAllowed
-    TAIL_SIZE = 87  # kpidTailSize
-    EMBEDDED_STUB_SIZE = 88  # kpidEmbeddedStubSize
-    NT_REPARSE = 89  # kpidNtReparse
-    HARD_LINK = 90  # kpidHardLink
-    INODE = 91  # kpidINode
-    STREAM_ID = 92  # kpidStreamId
-    READ_ONLY = 93  # kpidReadOnly
-    OUT_NAME = 94  # kpidOutName
-    COPY_LINK = 95  # kpidCopyLink
-    ARC_FILE_NAME = 96  # kpidArcFileName
-    IS_HASH = 97  # kpidIsHash
-    CHANGE_TIME = 98  # kpidChangeTime
-    USER_ID = 99  # kpidUserId
-    GROUP_ID = 100  # kpidGroupId
-    DEVICE_MAJOR = 101  # kpidDeviceMajor
-    DEVICE_MINOR = 102  # kpidDeviceMinor
-    DEV_MAJOR = 103  # kpidDevMajor
-    DEV_MINOR = 104  # kpidDevMinor
+    NO_PROPERTY_0 = 0
+    MAIN_SUBFILE = 1
+    HANDLER_ITEM_INDEX = 2
+    PATH = 3
+    NAME = 4
+    EXTENSION = 5
+    IS_DIR = 6
+    SIZE = 7
+    PACK_SIZE = 8
+    ATTRIB = 9
+    CTIME = 10
+    ATIME = 11
+    MTIME = 12
+    SOLID = 13
+    COMMENTED = 14
+    ENCRYPTED = 15
+    SPLIT_BEFORE = 16
+    SPLIT_AFTER = 17
+    DICTIONARY_SIZE = 18
+    CRC = 19
+    TYPE = 20
+    IS_ANTI = 21
+    METHOD = 22
+    HOST_OS = 23
+    FILE_SYSTEM = 24
+    USER = 25
+    GROUP = 26
+    BLOCK = 27
+    COMMENT = 28
+    POSITION = 29
+    PREFIX = 30
+    NUM_SUB_DIRS = 31
+    NUM_SUB_FILES = 32
+    UNPACK_VER = 33
+    VOLUME = 34
+    IS_VOLUME = 35
+    OFFSET = 36
+    LINKS = 37
+    NUM_BLOCKS = 38
+    NUM_VOLUMES = 39
+    TIME_TYPE = 40
+    BIT64 = 41
+    BIG_ENDIAN = 42
+    CPU = 43
+    PHY_SIZE = 44
+    HEADERS_SIZE = 45
+    CHECKSUM = 46
+    CHARACTS = 47
+    VA = 48
+    ID = 49
+    SHORT_NAME = 50
+    CREATOR_APP = 51
+    SECTOR_SIZE = 52
+    POSIX_ATTRIB = 53
+    SYM_LINK = 54
+    ERROR = 55
+    TOTAL_SIZE = 56
+    FREE_SPACE = 57
+    CLUSTER_SIZE = 58
+    VOLUME_NAME = 59
+    LOCAL_NAME = 60
+    PROVIDER = 61
+    NT_SECURE = 62
+    IS_ALT_STREAM = 63
+    IS_AUX = 64
+    IS_DELETED = 65
+    IS_TREE = 66
+    SHA1 = 67
+    SHA256 = 68
+    ERROR_TYPE = 69
+    NUM_ERRORS = 70
+    ERROR_FLAGS = 71
+    WARNING_FLAGS = 72
+    WARNING = 73
+    NUM_STREAMS = 74
+    NUM_ALT_STREAMS = 75
+    ALT_STREAMS_SIZE = 76
+    VIRTUAL_SIZE = 77
+    UNPACK_SIZE = 78
+    TOTAL_PHY_SIZE = 79
+    VOLUME_INDEX = 80
+    SUB_TYPE = 81
+    SHORT_COMMENT = 82
+    CODE_PAGE = 83
+    IS_NOT_ARC_TYPE = 84
+    PHY_SIZE_CANT_BE_DETECTED = 85
+    ZEROS_TAIL_IS_ALLOWED = 86
+    TAIL_SIZE = 87
+    EMBEDDED_STUB_SIZE = 88
+    NT_REPARSE = 89
+    HARD_LINK = 90
+    INODE = 91
+    STREAM_ID = 92
+    READ_ONLY = 93
+    OUT_NAME = 94
+    COPY_LINK = 95
+    ARC_FILE_NAME = 96
+    IS_HASH = 97
+    CHANGE_TIME = 98
+    USER_ID = 99
+    GROUP_ID = 100
+    DEVICE_MAJOR = 101
+    DEVICE_MINOR = 102
+    DEV_MAJOR = 103
+    DEV_MINOR = 104
 
-    USER_DEFINED = 0x10000  # kpidUserDefined
+
+class ArchiveItemAttrib(IntFlag, boundary=KEEP):
+    """
+    Archive item attribute flags.
+    """
+
+    READ_ONLY = 1 << 0
+    HIDDEN = 1 << 1
+    SYSTEM = 1 << 2
+    DIRECTORY = 1 << 3
+    ARCHIVE = 1 << 4
+    DEVICE = 1 << 5
+    NORMAL = 1 << 6
+    TEMPORARY = 1 << 7
+    SPARSE_FILE = 1 << 8
+    REPARSE_POINT = 1 << 9
+    COMPRESSED = 1 << 10
+    OFFLINE = 1 << 11
+    ENCRYPTED = 1 << 12
+    UNIX_EXTENSION = 1 << 13
 
 
 class ArchiveError(RuntimeError):
@@ -167,6 +189,8 @@ class Archive:
     """An archive."""
 
     closed: bool
+    _archive_properties: Dict[str, int]
+    _archive_item_properties: Dict[str, int]
 
     def __init__(self, filename: Union[PathLike, str], *, password: Union[None, str, bytes] = None) -> None:
         self.filename = filename
@@ -182,6 +206,14 @@ class Archive:
             raise RuntimeError("{self.filename}: Unknown or unsupported format.")
 
         self.closed = False
+
+        try:
+            self.__read_archive_properties()
+            self.__read_archive_item_properties()
+        except Exception:
+            log.exception("Failed reading archive (item) property information.")
+            self.close()
+            raise
 
     def __get_possible_formats(self) -> Generator[FormatInfo, None, None]:
         extension = None
@@ -200,19 +232,80 @@ class Archive:
         self.stream.stream.seek(0, SEEK_SET)
         stream = self.stream.get_instance(IID_IInStream)
         open_callback = self.open_callback.get_instance(IID_IArchiveOpenCallback)
-        result = archive.vtable.Open(archive, stream, ffi.NULL, open_callback)
-        if result < 0:
-            archive.release()
+        result = archive.vtable.Open(archive, stream, ffi.NULL, open_callback)  # type: ignore
+        if result & 0x80000000:
+            ffi.release(archive)
             return False
 
         self.archive = archive
         return True
 
+    def __read_properties(self, get_num_props_fn, get_prop_fn) -> Dict[str, int]:
+        arc = self.archive
+        with ffi.new("uint32_t *") as num_props_ptr:
+            result = get_num_props_fn(arc, num_props_ptr)
+            if result & 0x80000000:
+                raise RuntimeError(f"HRESULT(0x{result:#08x})")
+            num_props = num_props_ptr[0]
+
+        properties: Dict[str, int] = {}
+
+        name_ptr = ffi.new("wchar_t **")
+        prop_id_ptr = ffi.new("PROPID *")
+        var_type_ptr = ffi.new("VARTYPE *")
+
+        for prop_idx in range(num_props):
+            result = get_prop_fn(arc, prop_idx, name_ptr, prop_id_ptr, var_type_ptr)
+            if result & 0x80000000:
+                raise RuntimeError(f"HRESULT(0x{result:#08x})")
+
+            prop_id = prop_id_ptr[0]
+            prop_name: str = ""
+            if name_ptr[0] != ffi.NULL:
+                name_str = ffi.string(name_ptr[0])
+                assert isinstance(name_str, str)
+                prop_name = name_str
+                lib.SysFreeString(name_ptr[0])  # type: ignore
+
+            if prop_id < 0x10000:
+                try:
+                    prop_id = ArchiveProps(prop_id)
+                    prop_name = prop_id.name.lower()
+                except ValueError:
+                    log.warning("Unknown 7-zip archive property: %d", prop_id)
+                    continue
+
+            prop_name = prop_name.lower()
+            prop_type = VARTYPE(var_type_ptr[0])
+
+            log.debug("Got property %d: %s (type: %s)", prop_id, prop_name, prop_type.name)
+            properties[prop_name] = prop_id
+
+        ffi.release(var_type_ptr)
+        ffi.release(prop_id_ptr)
+        ffi.release(name_ptr)
+
+        return properties
+
+    def __read_archive_properties(self) -> None:
+        log.debug("Reading archive property info.")
+        self._archive_properties = self.__read_properties(
+            self.archive.vtable.GetNumberOfArchiveProperties,
+            self.archive.vtable.GetArchivePropertyInfo,
+        )
+
+    def __read_archive_item_properties(self) -> None:
+        log.debug("Reading archive item property info.")
+        self._archive_item_properties = self.__read_properties(
+            self.archive.vtable.GetNumberOfProperties,
+            self.archive.vtable.GetPropertyInfo,
+        )
+
     def __len__(self) -> int:
         if self.closed:
             raise ArchiveClosedError()
         number_of_items = ffi.new("uint32_t *")
-        result = self.archive.vtable.GetNumberOfItems(self.archive, number_of_items)
+        result = self.archive.vtable.GetNumberOfItems(self.archive, number_of_items)  # type: ignore
         if result < 0:
             raise RuntimeError()
         return number_of_items[0]
@@ -268,9 +361,9 @@ class Archive:
             num_items = len(indices)
 
         archive = self.archive
-        extract_callback = ArchiveExtractToDirectoryCallback(archive=self, directory=dest_dir, password=None)
+        extract_callback = ArchiveExtractToDirectoryCallback(archive=self, directory=dest_dir, password=self.password)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
-        result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)
+        result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)  # type: ignore
         extract_callback.cleanup()
         if result < 0:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
@@ -288,7 +381,7 @@ class Archive:
         archive = self.archive
         extract_callback = ArchiveExtractToStreamCallback(item_stream, item.index, password)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
-        result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)
+        result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)  # type: ignore
         if result < 0:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
         extract_callback.cleanup()
@@ -302,25 +395,16 @@ class Archive:
 class ArchiveItem:
     """An item inside an Archive."""
 
+    _properties: Dict[str, int]
     archive: ReferenceType[Archive]
     index: int
 
     def __init__(self, archive: Archive, index: int) -> None:
         if not (0 <= index < len(archive)):
             raise IndexError
+        self._properties = archive._archive_item_properties
         self.archive = ref(archive)
         self.index = index
-
-    def __get_property(self, prop_id) -> PropVariant:
-        archive = self.archive()
-        if not archive or archive.closed:
-            raise ArchiveClosedError()
-
-        prop_var = PropVariant()
-        result = archive.archive.vtable.GetProperty(archive.archive, self.index, prop_id, prop_var.cdata)
-        if result < 0:
-            raise RuntimeError()
-        return prop_var
 
     def read_bytes(self, *, password: Union[None, str, bytes] = None) -> bytes:
         """Read the contents of the item as a bytes."""
@@ -336,21 +420,22 @@ class ArchiveItem:
             raise ArchiveClosedError()
         return archive.read_item_text(self, encoding, password=password)
 
-    @property
-    def path(self) -> str:
-        """The path of the item."""
-        return self.__get_property(ArchiveProps.PATH).as_string()
+    def __get_prop_impl(self, prop_id: int) -> Any:
+        archive = self.archive()
+        if not archive or archive.closed:
+            raise ArchiveClosedError()
+        arc = archive.archive
+        prop_var = PropVariant()
+        result = arc.vtable.GetProperty(arc, self.index, prop_id, prop_var.cdata)
+        if result & 0x80000000:
+            raise ArchiveError(f"HRESULT(0x{result:#08x})")
+        return prop_var.as_any()
 
-    @property
-    def is_dir(self) -> bool:
-        """is the item a directory."""
-        return self.__get_property(ArchiveProps.IS_DIR).as_bool()
-
-    @property
-    def crc(self) -> Optional[int]:
-        """Item CRC"""
-        # NOTE: I wasn't going to implement this, but it's needed for tests.
-        prop_var = self.__get_property(ArchiveProps.CRC)
-        if not prop_var.has_value:
-            return None
-        return prop_var.as_int()
+    def __getattr__(self, name: str) -> Any:
+        try:
+            if not name.islower():
+                raise ValueError()
+            prop_id = ArchiveProps[name.upper()]
+            return self.__get_prop_impl(prop_id)
+        except ValueError as exc:
+            raise AttributeError from exc
