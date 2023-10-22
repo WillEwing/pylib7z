@@ -98,7 +98,7 @@ class FormatInfo:
 
     def __init__(self, index: int) -> None:
         if not (0 <= index < _get_num_formats()):
-            raise IndexError("Format index out of range.")
+            raise IndexError()
         self.index = index
 
     @property
