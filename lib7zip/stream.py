@@ -6,7 +6,7 @@ Python bindings for the 7-Zip Library: IO Streams
 """
 
 from os import PathLike
-from typing import BinaryIO
+from typing import BinaryIO, Union
 
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
@@ -60,7 +60,7 @@ class FileInStream(PyInStream):
     IInStream implemetation backed by a Python file stream.
     """
 
-    def __init__(self, filename: PathLike) -> None:
+    def __init__(self, filename: Union[PathLike, str]) -> None:
         super().__init__(open(filename, "rb"))
 
 
@@ -105,5 +105,5 @@ class FileOutStream(PyOutStream):
     IOutStream implemetation backed by a Python file stream.
     """
 
-    def __init__(self, filename: PathLike) -> None:
+    def __init__(self, filename: Union[PathLike, str]) -> None:
         super().__init__(open(filename, "wb"))
