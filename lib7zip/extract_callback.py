@@ -77,7 +77,10 @@ class ArchiveExtractCallback(PyUnknown):
         return HRESULT.S_OK
 
     def CryptoGetTextPassword(self, password):
-        password[0] = lib.SysAllocStringLen(self.password, len(self.password))
+        if self.password:
+            password[0] = lib.SysAllocStringLen(self.password, len(self.password))
+        else:
+            password[0] = ffi.NULL
         return HRESULT.S_OK
 
     def CryptoGetTextPassword2(self, has_password, password):
