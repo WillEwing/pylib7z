@@ -8,7 +8,7 @@ Python bindings for the 7-Zip Library: archive extract callbacks
 from enum import IntEnum
 from pathlib import Path
 
-from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IArchiveExtractCallback,
@@ -56,7 +56,6 @@ class ArchiveExtractCallback(PyUnknown):
 
     def __init__(self, password):
         self.password = password
-        self.password_buf = ffi.new("wchar_t[]", password) if password else ffi.NULL
         super().__init__()
 
     def SetTotal(self, total):
@@ -78,11 +77,20 @@ class ArchiveExtractCallback(PyUnknown):
         return HRESULT.S_OK
 
     def CryptoGetTextPassword(self, password):
-        password[0] = self.password_buf
+        password[0] = lib.SysAllocStringLen(self.password, len(self.password))
+        return HRESULT.S_OK
 
     def CryptoGetTextPassword2(self, has_password, password):
-        has_password[0] = self.password is not None
-        password[0] = self.password_buf
+        if self.password:
+            has_password[0] = True
+            password[0] = lib.SysAllocStringLen(self.password, len(self.password))
+        else:
+            has_password[0] = False
+            password[0] = ffi.NULL
+        return HRESULT.S_OK
+
+    def cleanup(self):
+        raise NotImplementedError()
 
 
 class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
@@ -113,10 +121,17 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
             path.mkdir(exist_ok=True, parents=True)
             out_stream[0] = ffi.NULL
         else:
+            path.parent.mkdir(exist_ok=True, parents=True)
             self.streams[index] = stream = FileOutStream(path)
-            out_stream[0] = stream.instances[IID_ISequentialOutStream]
+            out_stream[0] = stream.get_instance(IID_ISequentialOutStream)
 
         return HRESULT.S_OK.value
+
+    def cleanup(self):
+        for stream in self.streams.values():
+            stream.stream.flush()
+            stream.stream.close()
+        del self.streams
 
 
 class ArchiveExtractToStreamCallback(ArchiveExtractCallback):
@@ -134,8 +149,11 @@ class ArchiveExtractToStreamCallback(ArchiveExtractCallback):
             return HRESULT.S_OK.value
 
         if index == self.index:
-            out_stream[0] = self.stream.instances[IID_ISequentialOutStream]
+            out_stream[0] = self.stream.get_instance(IID_ISequentialOutStream)
             return HRESULT.S_OK.value
         else:
             out_stream[0] = ffi.NULL
             return HRESULT.S_OK.value
+
+    def cleanup(self):
+        self.stream.stream.flush()

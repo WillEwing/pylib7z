@@ -31,7 +31,7 @@ class ArchiveOpenCallback(PyUnknown):
         IID_IArchiveOpenSetSubArchiveName,
     )
 
-    def __int__(self, password=None, stream=None):
+    def __init__(self, password=None, stream=None):
         self.password = password
         self.password_buf = ffi.new("wchar_t []", password) if password else ffi.NULL
         self.stream = stream
