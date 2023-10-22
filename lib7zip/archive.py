@@ -349,6 +349,7 @@ class ArchiveItem:
     @property
     def crc(self) -> Optional[int]:
         """Item CRC"""
+        # NOTE: I wasn't going to implement this, but it's needed for tests.
         prop_var = self.__get_property(ArchiveProps.CRC)
         if not prop_var.has_value:
             return None
