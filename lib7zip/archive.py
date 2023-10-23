@@ -17,6 +17,7 @@ from weakref import ReferenceType, ref
 from .extract_callback import (
     ArchiveExtractToDirectoryCallback,
     ArchiveExtractToStreamCallback,
+    OperationResult,
 )
 from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
 from .format_registry import FormatInfo, formats
@@ -367,6 +368,8 @@ class Archive:
         extract_callback.cleanup()
         if result & 0x80000000:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
+        if extract_callback.last_op_result != OperationResult.OK:
+            raise ExtractError()
 
     def read_item_bytes(self, item: "ArchiveItem", *, password: Union[None, str, bytes] = None) -> bytes:
         """Read `item` as bytes."""
@@ -382,9 +385,12 @@ class Archive:
         extract_callback = ArchiveExtractToStreamCallback(item_stream, item.index, password)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)  # type: ignore
+        extract_callback.cleanup()
         if result & 0x80000000:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
-        extract_callback.cleanup()
+        if extract_callback.last_op_result != OperationResult.OK:
+            raise ExtractError()
+
         return item_stream.getvalue()
 
     def read_item_text(self, item: "ArchiveItem", encoding: str = "utf-8", *, password: Union[None, str, bytes] = None) -> str:

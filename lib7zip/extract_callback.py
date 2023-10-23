@@ -55,6 +55,7 @@ class ArchiveExtractCallback(PyUnknown):
     )
 
     def __init__(self, password):
+        self.last_op_result = None
         self.password = password
         super().__init__()
 
@@ -68,6 +69,7 @@ class ArchiveExtractCallback(PyUnknown):
         return HRESULT.S_OK
 
     def SetOperationResult(self, op_result):
+        self.last_op_result = op_result
         return HRESULT.S_OK
 
     def GetStream(self, index, out_stream, ask_extract_mode):

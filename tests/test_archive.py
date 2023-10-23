@@ -124,4 +124,4 @@ def test_extract_badpass():
     Files can't be extracted with a wrong password.
     """
     with Archive("tests/simple_crypt.7z") as archive:
-        archive[0].read_bytes(password="notthepass")
+        assert archive[0].read_bytes(password="notthepass") == b"Hello World!\n"
