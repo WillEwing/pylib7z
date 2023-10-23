@@ -11,8 +11,8 @@ from typing import Optional
 from cffi import FFI
 from setuptools import Command  # pylint: disable=import-error
 
+from .codegen_c import append_cdefs, append_cimpl
 from .codegen_py import build_thunks_py
-from .idlgen import append_cdefs, append_cimpl
 
 
 def get_cimpl() -> str:
