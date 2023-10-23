@@ -1,4 +1,5 @@
 [flake8]
 max-line-length = 160
 exclude = .git,__pycache__,docs/source/conf.py,old,build,dist,.tox,venv
-extend-ignore = E302,E305,E203
+extend-ignore = E302,E305,E203,W503
+extend-select = W504
