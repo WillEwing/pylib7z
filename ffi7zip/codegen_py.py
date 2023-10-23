@@ -4,6 +4,7 @@
 import ast
 from typing import Generator, Optional
 
+from .codegen_shared import InterfaceNames, thunk_name
 from .interfaces import INTERFACES, CInterface, CMethod
 
 
@@ -51,7 +52,7 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
     Build the AST subtree for a method thunk.
     """
     return ast.FunctionDef(
-        name=f"FFI7Z_Py_{interface.name}_{method.name}",
+        name=thunk_name(interface, method),
         args=ast.arguments(
             posonlyargs=[],
             args=[ast.Name(id=arg_name) for _, arg_name in ((None, "this"), *method.arguments)],
@@ -85,7 +86,7 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
                                                 ctx=ast.Load(),
                                             ),
                                             args=[
-                                                ast.Constant(value=f"FFI7Z_Py{interface.name} *"),
+                                                ast.Constant(value=f"{InterfaceNames(interface).python_impl_struct} *"),
                                                 ast.Name(id="this", ctx=ast.Load()),
                                             ],
                                             keywords=[],

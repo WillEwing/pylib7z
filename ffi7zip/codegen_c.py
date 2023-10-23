@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Generate C source and definitions, and Python thunks from `interfaces.py`
+Generate C source and definitions from `interfaces.py`
 """
 
 
@@ -10,6 +10,7 @@ import importlib.resources
 import sys
 from typing import TextIO
 
+from .codegen_shared import InterfaceNames, thunk_name
 from .interfaces import INTERFACES, CInterface, CMethod, CTypeDecl
 
 INTERFACES_BY_NAME = {interface.name: interface for interface in INTERFACES}
@@ -25,43 +26,6 @@ else:
     def load_text(filename: str) -> str:
         """Load text from module resource."""
         return importlib.resources.files(__package__).joinpath(filename).read_text()
-
-
-class InterfaceNames:
-    """
-    Helper class to get interface struct and instance names.
-    """
-
-    @property
-    def vtable_struct(self) -> str:
-        """
-        Virtual function table struct name.
-        """
-        return f"FFI7Z_{self.interface.name}_vtable"
-
-    @property
-    def opaque_impl_struct(self) -> str:
-        """
-        Opaque implementation struct name.
-        """
-        return f"FFI7Z_{self.interface.name}"
-
-    @property
-    def python_impl_struct(self) -> str:
-        """
-        Python implementation struct name.
-        """
-        return f"FFI7Z_Py{self.interface.name}"
-
-    @property
-    def python_impl_vtable(self) -> str:
-        """
-        Python implemenation vtable instance name.
-        """
-        return f"FFI7Z_Py{self.interface.name}_vtable"
-
-    def __init__(self, interface: CInterface) -> None:
-        self.interface = interface
 
 
 def mangle_dtype(typedecl: CTypeDecl) -> CTypeDecl:
@@ -119,13 +83,6 @@ def append_python_impl_cdecl(stream: TextIO, interface: CInterface) -> None:
     stream.write("    void *self_handle;\n")
     stream.write(f"}} {interface_names.python_impl_struct};\n\n")
     stream.write(f"const {interface_names.vtable_struct} {interface_names.python_impl_vtable};\n\n")
-
-
-def thunk_name(interface, method) -> str:
-    """
-    Get the name of a the thunk for `interface`.`method`.
-    """
-    return f"FFI7Z_Py_{interface.name}_{method.name}"
 
 
 def append_thunk_method_cdecl(stream: TextIO, interface: CInterface, method: CMethod) -> None:
