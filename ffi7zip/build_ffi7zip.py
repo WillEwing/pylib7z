@@ -11,7 +11,8 @@ from typing import Optional
 from cffi import FFI
 from setuptools import Command  # pylint: disable=import-error
 
-from .idlgen import append_cdefs, append_cimpl, append_thunk_pyimpls
+from .codegen_py import build_thunks_py
+from .idlgen import append_cdefs, append_cimpl
 
 
 def get_cimpl() -> str:
@@ -58,16 +59,5 @@ class UpdateThunks(Command):
     def run(self) -> None:
         """Generated updated thunks file."""
         thunks_path = "lib7zip/thunks.py"
-        with open(thunks_path, "w", encoding="utf-8") as thunks_py:
-            thunks_py.write("#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n\n")
-            thunks_py.write(
-                """
-from .ffi7zip import ffi
-from .hresult import HRESULT
-from logging import getLogger
-
-log = getLogger("ffi7zip.thunks")
-
-"""
-            )
-            append_thunk_pyimpls(thunks_py)
+        with open(thunks_path, "wb") as thunks_py:
+            thunks_py.write(build_thunks_py())
