@@ -306,7 +306,7 @@ class Archive:
             raise ArchiveClosedError()
         number_of_items = ffi.new("uint32_t *")
         result = self.archive.vtable.GetNumberOfItems(self.archive, number_of_items)  # type: ignore
-        if result < 0:
+        if result & 0x80000000:
             raise RuntimeError()
         return number_of_items[0]
 
@@ -365,7 +365,7 @@ class Archive:
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)  # type: ignore
         extract_callback.cleanup()
-        if result < 0:
+        if result & 0x80000000:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
 
     def read_item_bytes(self, item: "ArchiveItem", *, password: Union[None, str, bytes] = None) -> bytes:
@@ -382,7 +382,7 @@ class Archive:
         extract_callback = ArchiveExtractToStreamCallback(item_stream, item.index, password)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, item_ptr, 1, 0, extract_callback_instance)  # type: ignore
-        if result < 0:
+        if result & 0x80000000:
             raise ExtractError(f"HRESULT(0x{result:#08x})")
         extract_callback.cleanup()
         return item_stream.getvalue()
