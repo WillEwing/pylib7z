@@ -9,7 +9,7 @@ from enum import KEEP, IntEnum, IntFlag
 from io import BytesIO
 from logging import getLogger
 from os import SEEK_SET, PathLike
-from pathlib import Path
+from pathlib import Path, PurePath
 from types import TracebackType
 from typing import Any, Dict, Generator, Optional, Self, Sequence, Type, Union
 from weakref import ReferenceType, ref
@@ -192,6 +192,7 @@ class Archive:
     closed: bool
     _archive_properties: Dict[str, int]
     _archive_item_properties: Dict[str, int]
+    _item_indices_by_path: Dict[PurePath, int]
 
     def __init__(self, filename: Union[PathLike, str], *, password: Union[None, str, bytes] = None) -> None:
         self.filename = filename
@@ -215,6 +216,8 @@ class Archive:
             log.exception("Failed reading archive (item) property information.")
             self.close()
             raise
+
+        self.__items_by_path = {}
 
     def __get_possible_formats(self) -> Generator[FormatInfo, None, None]:
         extension = None
@@ -311,10 +314,17 @@ class Archive:
             raise RuntimeError()
         return number_of_items[0]
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int | PathLike | str):
         if self.closed:
             raise ArchiveClosedError()
-
+        if not isinstance(index, int):
+            index = PurePath(index)
+            if not self._item_indices_by_path:
+                self._item_indices_by_path = {PurePath(item.path): item.index for item in self}
+            try:
+                return ArchiveItem(self, self._item_indices_by_path[index])
+            except KeyError as exc:
+                raise FileNotFoundError() from exc
         if not (0 <= index < len(self)):
             raise IndexError()
         return ArchiveItem(self, index)
