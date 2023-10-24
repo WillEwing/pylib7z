@@ -22,3 +22,7 @@ packages = ["lib7zip"]
 
 [tool.isort]
 profile = "black"
+
+[tool.black]
+target-version = ["py38"]
+line-length = 160
