@@ -539,9 +539,3 @@ INTERFACES = [
     ICryptoGetTextPassword2,
     IInArchive,
 ]
-
-
-if __name__ == "__main__":
-    from pprint import pprint
-
-    pprint(INTERFACES)
