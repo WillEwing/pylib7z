@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
-import io
 import logging
 import os
-import shutil
-import sys
 from collections import namedtuple
-from functools import partial
-from glob import glob
-from tempfile import mkdtemp
 
 import pytest
 
-from lib7zip import Archive, ArchiveItem
+from lib7zip import Archive
 from lib7zip.archive import ExtractError
 
 log = logging.getLogger("lib7zip")
@@ -22,8 +16,8 @@ SIMPLE_ARCHIVES = ("tests/simple.7z", "tests/simple.zip")
 _IX = namedtuple("ArchiveItemEx", ("is_dir", "crc", "contents"))
 
 
-def IX(is_dir=False, crc=None, contents=""):
-    # return _IX(is_dir, crc, contents.encode('utf8') if contents is not None else None)
+def IX(is_dir=False, crc=None, contents=""):  # pylint: disable=invalid-name
+    "Shortcut function to pack _IX tuples."
     return _IX(is_dir, crc, contents)
 
 
@@ -43,6 +37,9 @@ COMPLEX_MD = {
 
 
 def test_complex():
+    """
+    Complex archive metadata and files can be read.
+    """
     log.debug("test_complex()")
     with Archive("tests/complex.7z") as archive:
         for item in archive:
@@ -65,6 +62,9 @@ def test_complex():
 
 
 def test_extract_dir_complex(tmpdir):
+    """
+    Complex archives can be extracted to a directory.
+    """
     with Archive("tests/complex.7z") as archive:
         archive.extract(tmpdir)
 
@@ -104,7 +104,7 @@ def test_extract_with_pass():
     """
     with Archive("tests/simple_crypt.7z") as archive:
         assert archive[0].path == "hello.txt"
-        archive[0].read_text(password="password") == "Hello World!\n"
+        assert archive[0].read_text(password="password") == "Hello World!\n"
 
 
 def test_extract_with_pass_dir(tmpdir):
