@@ -360,7 +360,7 @@ class Archive:
             item_indices.add(item.index)
         return sorted(item_indices)
 
-    def extract(self, dest_dir: PathLike, items: Optional[Sequence["ArchiveItem"]] = None) -> None:
+    def extract(self, dest_dir: PathLike, items: Optional[Sequence["ArchiveItem"]] = None, **kwargs) -> None:
         """Extract files into a directory."""
         if self.closed:
             raise ArchiveClosedError()
@@ -377,7 +377,7 @@ class Archive:
             num_items = len(indices)
 
         archive = self.archive
-        extract_callback = ArchiveExtractToDirectoryCallback(archive=self, directory=dest_dir, password=self.password)
+        extract_callback = ArchiveExtractToDirectoryCallback(archive=self, directory=dest_dir, password=self.password, **kwargs)
         extract_callback_instance = extract_callback.get_instance(IID_IArchiveExtractCallback)
         result = archive.vtable.Extract(archive, items_ptr, num_items, 0, extract_callback_instance)  # type: ignore
         extract_callback.cleanup()

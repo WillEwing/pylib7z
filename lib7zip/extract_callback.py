@@ -104,10 +104,11 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
 
     # pylint: disable=invalid-name
 
-    def __init__(self, archive, directory, password):
+    def __init__(self, archive, directory, password, *, strip_components=0):
         self.archive = archive
         self.directory = Path(directory)
         self.streams = {}
+        self.strip_components = strip_components
         super().__init__(password)
 
     def GetStream(self, index, out_stream, ask_extract_mode):
@@ -118,10 +119,16 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
             return self.streams[index]
 
         item = self.archive[index]
+        path = Path(item.path)
 
-        path = self.directory / item.path
+        if len(path.parts) < self.strip_components:
+            out_stream[0] = ffi.NULL
+            return HRESULT.S_OK
+
+        path = self.directory / Path(*path.parts[self.strip_components :])
         if self.directory not in (path, *path.parents):
-            return HRESULT.S_FALSE.value
+            out_stream[0] = ffi.NULL
+            return HRESULT.S_FALSE
 
         if item.is_dir:
             path.mkdir(exist_ok=True, parents=True)
@@ -131,7 +138,7 @@ class ArchiveExtractToDirectoryCallback(ArchiveExtractCallback):
             self.streams[index] = stream = FileOutStream(path)
             out_stream[0] = stream.get_instance(IID_ISequentialOutStream)
 
-        return HRESULT.S_OK.value
+        return HRESULT.S_OK
 
     def cleanup(self):
         for stream in self.streams.values():
