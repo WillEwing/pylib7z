@@ -319,6 +319,11 @@ class Archive:
             raise IndexError()
         return ArchiveItem(self, index)
 
+    def __iter__(self):
+        num_items = len(self)
+        for index in range(num_items):
+            yield self[index]
+
     def close(self):
         """Explicitly close the Archive and free its resources."""
         if not self.closed:
