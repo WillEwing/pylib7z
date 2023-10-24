@@ -2,6 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import ast
+
+try:
+    import ast_compat as astc
+except ImportError:
+    astc = ast
+
 from typing import Generator, Optional
 
 from .codegen_shared import InterfaceNames, thunk_name
@@ -22,12 +28,13 @@ def get_thunk_error_handler(return_type: str) -> ast.AST:
             ctx=ast.Load(),
         )
     elif return_type == "uint32_t":
-        return_value = ast.Constant(value=0)
+        return_value = ast.Constant(value=0, kind="i")
     else:
         raise NotImplementedError()
 
     return ast.ExceptHandler(
         type=ast.Name(id="Exception", ctx=ast.Load()),
+        name=None,
         body=[
             ast.Expr(
                 value=ast.Call(
@@ -37,7 +44,7 @@ def get_thunk_error_handler(return_type: str) -> ast.AST:
                         ctx=ast.Load(),
                     ),
                     args=[
-                        ast.Constant(value="Unhandled exception in callback thunk."),
+                        ast.Constant(value="Unhandled exception in callback thunk.", kind="u"),
                     ],
                     keywords=[],
                 )
@@ -53,7 +60,7 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
     """
     return ast.FunctionDef(
         name=thunk_name(interface, method),
-        args=ast.arguments(
+        args=astc.arguments(
             posonlyargs=[],
             args=[ast.Name(id=arg_name) for _, arg_name in ((None, "this"), *method.arguments)],
             kwonlyargs=[],
@@ -61,11 +68,7 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
             defaults=[],
         ),
         body=[
-            ast.Expr(
-                value=ast.Constant(
-                    value=f"Thunk for {interface.name}.{method.name}",
-                )
-            ),
+            ast.Expr(value=ast.Constant(value=f"Thunk for {interface.name}.{method.name}", kind="u")),
             ast.Try(
                 body=[
                     ast.Assign(
@@ -86,12 +89,12 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
                                                 ctx=ast.Load(),
                                             ),
                                             args=[
-                                                ast.Constant(value=f"{InterfaceNames(interface).python_impl_struct} *"),
+                                                ast.Constant(value=f"{InterfaceNames(interface).python_impl_struct} *", kind="u"),
                                                 ast.Name(id="this", ctx=ast.Load()),
                                             ],
                                             keywords=[],
                                         ),
-                                        slice=ast.Constant(value=0),
+                                        slice=ast.Constant(value=0, kind="i"),
                                         ctx=ast.Load(),
                                     ),
                                     attr="self_handle",
@@ -129,6 +132,7 @@ def build_thunk_function(interface: CInterface, method: CMethod) -> ast.AST:
                 keywords=[],
             )
         ],
+        returns=None,
     )
 
 
@@ -147,16 +151,16 @@ def build_thunks_ast() -> ast.AST:
     """
     return ast.Module(
         body=[
-            ast.Expr(value=ast.Constant(value="Generated COM thunks for lib7zip.")),
-            ast.ImportFrom(module="logging", names=[ast.alias(name="getLogger")], level=0),
-            ast.ImportFrom(module="ffi7zip", names=[ast.alias(name="ffi")], level=1),
-            ast.ImportFrom(module="hresult", names=[ast.alias(name="HRESULT")], level=1),
+            ast.Expr(value=ast.Constant(value="Generated COM thunks for lib7zip.", kind="u")),
+            ast.ImportFrom(module="logging", names=[ast.alias(asname="getLogger", name="getLogger")], level=0),
+            ast.ImportFrom(module="ffi7zip", names=[ast.alias(asname="ffi", name="ffi")], level=1),
+            ast.ImportFrom(module="hresult", names=[ast.alias(asname="HRESULT", name="HRESULT")], level=1),
             ast.Assign(
                 targets=[ast.Name(id="log", ctx=ast.Store())],
                 value=[
                     ast.Call(
                         func=ast.Name(id="getLogger", ctx=ast.Load()),
-                        args=[ast.Constant(value="ffi7zip")],
+                        args=[ast.Constant(value="ffi7zip", kind="u")],
                         keywords=[],
                     ),
                 ],
@@ -176,7 +180,7 @@ def build_thunks_py() -> bytes:
 # -*- coding: utf-8 -*-
 # pylint: disable=broad-exception-caught,invalid-name,no-name-in-module
 # type: ignore"""
-        + ast.unparse(ast.fix_missing_locations(build_thunks_ast()))
+        + astc.unparse(ast.fix_missing_locations(build_thunks_ast()))
     ).encode("utf-8")
 
 
