@@ -1,9 +1,19 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm", "cffi"]
+requires = [
+    "setuptools",
+    "setuptools-scm",
+    "cffi",
+    "ast-compat ; python_version < '3.9'",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "lib7zip"
+authors = [
+    { name = "William Ewing", email = "will.ewing.iv@gmail.com" },
+    { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
+]
+license = { text = "BSD" }
 version = "0.2.0"
 dependencies = ["cffi"]
 
