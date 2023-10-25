@@ -13,9 +13,18 @@ authors = [
     { name = "William Ewing", email = "will.ewing.iv@gmail.com" },
     { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
 ]
-license = { text = "BSD" }
+maintainers = [{ name = "William Ewing", email = "will.ewing.iv@gmail.com" }]
+readme = "README.rst"
+license = { file = "LICENSE" }
 version = "0.2.0"
 dependencies = ["cffi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3.8",
+]
 
 [tool.setuptools]
 packages = ["lib7zip"]

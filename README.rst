@@ -3,14 +3,12 @@ python-lib7zip
 
 Python bindings for 7-Zip
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-:author: William Ewing <will.ewing.iv@gmail.com>
-:author: Mark Harviston <mark.harviston@gmail.com>
-:version: 0.2
 
-pylib7zip is a direct binding to 7z.dll from the 7-zip project (7zip.org)
+pylib7zip-ng is a (moslty) direct binding to 7z.dll from the 7-zip project (7zip.org).
+This is forked from
 
-7z.dll uses Windows COM+ calling conventions without registering itself with the COM server
-and has an over-engineered slightly pathological OOP API.
+7z.dll uses Windows COM-like calling conventions with its own interface for
+creating and querying objects.
 
 Only reading metadata and extracting files is currently supported.
 The library currently relies on on Windows API for memory allocation/deallocation.
@@ -21,7 +19,7 @@ Dependencies
 
     * 7z.dll from 7-zip_
     * CFFI_
-    * ast-compat_ on python versions prior to 3.12
+    * ast-compat_ is required for building on python versions prior to 3.12
 
 How To Use
 ----------
@@ -63,7 +61,7 @@ License
 
 This code is licensed under the BSD 2-clause license.
 
-7-Zip is available under the LGPL with the exception of the code handling rar compression.
+7-Zip_ is available under the LGPL with the exception of the code handling rar compression.
 
 .. _7-zip: https://7-zip.org
 .. _CFFI: https://cffi.readthedocs.io/en/stable/
