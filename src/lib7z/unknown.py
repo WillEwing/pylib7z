@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import Dict, Tuple
 from uuid import UUID
 
-from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .ffi7z import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     NAMES_BY_IID,
@@ -20,7 +20,7 @@ from .iids import (
     unmarshall_guid,
 )
 
-log = getLogger("lib7zip")
+log = getLogger("lib7z")
 
 
 class PyUnknown:

@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import sys
 from collections import namedtuple
 
 import pytest
 
-from lib7zip import Archive
-from lib7zip.archive import ExtractError
+from lib7z import Archive
+from lib7z.archive import ExtractError
 
-log = logging.getLogger("lib7zip")
+log = logging.getLogger("lib7z")
 
 SIMPLE_ARCHIVES = ("tests/simple.7z", "tests/simple.zip")
 
 
-_IX = namedtuple("ArchiveItemEx", ("is_dir", "crc", "contents"))
+ArchiveItemEx = namedtuple("ArchiveItemEx", ("is_dir", "crc", "contents"))
 
 
 def IX(is_dir=False, crc=None, contents=""):  # pylint: disable=invalid-name
     "Shortcut function to pack _IX tuples."
-    return _IX(is_dir, crc, contents)
+    return ArchiveItemEx(is_dir, crc, contents)
 
 
 J = os.path.join

@@ -10,7 +10,7 @@ from enum import IntEnum
 from typing import Optional
 from uuid import UUID
 
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 from .propvariant import PropVariant
 
 
@@ -112,7 +112,7 @@ class MethodInfo:
         return _get_method_property(self.index, MethodProps.IS_FILTER).as_bool()
 
 
-class MethodRegistry(Sequence[MethodInfo]):
+class MethodRegistry(Sequence):
     """
     Read-only access to 7-zip's archive format registry.
     """

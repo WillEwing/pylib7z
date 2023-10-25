@@ -11,7 +11,7 @@ import os.path
 import sys
 
 from . import thunks  # noqa
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 
 
 def load_lib7z():

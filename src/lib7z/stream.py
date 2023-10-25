@@ -8,7 +8,7 @@ Python bindings for the 7-Zip Library: IO Streams
 from os import SEEK_CUR, SEEK_END, SEEK_SET, PathLike
 from typing import BinaryIO, Union
 
-from .ffi7zip import ffi  # pylint: disable=no-name-in-module
+from .ffi7z import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IInStream,

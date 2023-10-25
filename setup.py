@@ -7,8 +7,8 @@ import setuptools
 import setuptools.command.build
 
 # Latest setuptools/pip removes '' from sys.path, but it's needed here for code generation.
-sys.path.append(os.path.dirname(__file__))
-from ffi7zip.build_ffi7zip import (  # noqa, pylint: disable=wrong-import-position
+sys.path.append(os.path.join(os.path.dirname(__file__)))
+from ffi7z import (  # noqa, pylint: disable=wrong-import-position
     UpdateThunks,
     ffibuilder,
 )

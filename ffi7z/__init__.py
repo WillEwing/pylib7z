@@ -5,8 +5,9 @@
 Python bindings for 7-zip: FFI Builder.
 """
 
+import os.path
 from io import StringIO
-from typing import Optional
+from typing import List, Optional
 
 from cffi import FFI
 from setuptools import Command  # pylint: disable=import-error
@@ -35,7 +36,7 @@ def get_cdefs() -> str:
 
 ffibuilder = FFI()
 ffibuilder.set_unicode(True)
-ffibuilder.set_source("lib7zip.ffi7zip", get_cimpl(), libraries=["Ole32", "OleAut32"])
+ffibuilder.set_source("lib7z.ffi7z", get_cimpl(), libraries=["Ole32", "OleAut32"])
 ffibuilder.cdef(get_cdefs())
 
 
@@ -58,6 +59,7 @@ class UpdateThunks(Command):
 
     def run(self) -> None:
         """Generated updated thunks file."""
-        thunks_path = "lib7zip/thunks.py"
+        assert self.build_lib is not None
+        thunks_path = os.path.join(self.build_lib, "lib7z/thunks.py")
         with open(thunks_path, "wb") as thunks_py:
             thunks_py.write(build_thunks_py())

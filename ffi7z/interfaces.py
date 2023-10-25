@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Interfaces and embedded IDL for ffi7zip.
+Interfaces and embedded IDL for ffi7z.
 """
 
 import re

@@ -21,4 +21,4 @@ venv/
 *.whl
 
 # Ignore generated thunks.py
-lib7zip/thunks.py
+src/lib7z/thunks.py

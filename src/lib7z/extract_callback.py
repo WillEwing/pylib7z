@@ -10,7 +10,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IArchiveExtractCallback,
@@ -23,7 +23,7 @@ from .iids import (
 from .stream import FileOutStream, PyOutStream
 from .unknown import PyUnknown
 
-log = getLogger("lib7zip")
+log = getLogger("lib7z")
 
 
 class AskMode(IntEnum):

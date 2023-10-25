@@ -8,7 +8,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lib7zip"
+name = "lib7z"
 authors = [
     { name = "William Ewing", email = "will.ewing.iv@gmail.com" },
     { name = "Mark Harviston", email = "mark.harviston@gmail.com" },
@@ -27,7 +27,8 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["lib7zip"]
+package-dir = { "" = "src" }
+packages = ["lib7z"]
 
 [tool.isort]
 profile = "black"

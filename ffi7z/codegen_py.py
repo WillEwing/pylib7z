@@ -151,16 +151,16 @@ def build_thunks_ast() -> ast.AST:
     """
     return ast.Module(
         body=[
-            ast.Expr(value=ast.Constant(value="Generated COM thunks for lib7zip.", kind="u")),
+            ast.Expr(value=ast.Constant(value="Generated COM thunks for lib7z.", kind="u")),
             ast.ImportFrom(module="logging", names=[ast.alias(asname="getLogger", name="getLogger")], level=0),
-            ast.ImportFrom(module="ffi7zip", names=[ast.alias(asname="ffi", name="ffi")], level=1),
+            ast.ImportFrom(module="ffi7z", names=[ast.alias(asname="ffi", name="ffi")], level=1),
             ast.ImportFrom(module="hresult", names=[ast.alias(asname="HRESULT", name="HRESULT")], level=1),
             ast.Assign(
                 targets=[ast.Name(id="log", ctx=ast.Store())],
                 value=[
                     ast.Call(
                         func=ast.Name(id="getLogger", ctx=ast.Load()),
-                        args=[ast.Constant(value="ffi7zip", kind="u")],
+                        args=[ast.Constant(value="ffi7z", kind="u")],
                         keywords=[],
                     ),
                 ],

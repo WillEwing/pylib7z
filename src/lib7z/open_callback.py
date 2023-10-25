@@ -5,7 +5,7 @@
 Python bindings for the 7-Zip Library: archive open callbacks
 """
 
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
     IID_IArchiveOpenCallback,

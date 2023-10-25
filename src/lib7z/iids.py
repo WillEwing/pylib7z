@@ -8,7 +8,7 @@ IIDs and IID lookup function.
 import sys
 from uuid import UUID
 
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 
 # IIDs

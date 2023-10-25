@@ -11,7 +11,7 @@ from logging import getLogger
 from os import SEEK_SET, PathLike
 from pathlib import Path, PurePath
 from types import TracebackType
-from typing import Any, Dict, Generator, Optional, Self, Sequence, Type, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Type, Union
 from weakref import ReferenceType, ref
 
 from .extract_callback import (
@@ -19,7 +19,7 @@ from .extract_callback import (
     ArchiveExtractToStreamCallback,
     OperationResult,
 )
-from .ffi7zip import ffi, lib  # pylint: disable=no-name-in-module
+from .ffi7z import ffi, lib  # pylint: disable=no-name-in-module
 from .format_registry import FormatInfo, formats
 from .iids import (
     CreateObject,
@@ -32,7 +32,7 @@ from .open_callback import ArchiveOpenCallback
 from .propvariant import VARTYPE, PropVariant
 from .stream import FileInStream
 
-log = getLogger("lib7zip")
+log = getLogger("lib7z")
 
 
 class ArchiveProps(IntEnum):
@@ -316,7 +316,7 @@ class Archive:
             raise RuntimeError()
         return number_of_items[0]
 
-    def __getitem__(self, index: int | PathLike | str):
+    def __getitem__(self, index: Union[int, PathLike, str]):
         if self.closed:
             raise ArchiveClosedError()
         if not isinstance(index, int):
@@ -343,7 +343,7 @@ class Archive:
             ffi.release(self.archive)
         self.closed = True
 
-    def __enter__(self) -> Self:
+    def __enter__(self):
         return self
 
     def __exit__(
@@ -354,7 +354,7 @@ class Archive:
     ) -> None:
         self.close()
 
-    def __to_item_indices(self, items: Sequence["ArchiveItem"]) -> list[int]:
+    def __to_item_indices(self, items: Sequence["ArchiveItem"]) -> List[int]:
         item_indices: set[int] = set()
         for item in items:
             if item.archive() != self:
@@ -419,7 +419,7 @@ class ArchiveItem:
     """An item inside an Archive."""
 
     _properties: Dict[str, int]
-    archive: ReferenceType[Archive]
+    archive: ReferenceType
     index: int
 
     def __init__(self, archive: Archive, index: int) -> None:
