@@ -4,8 +4,7 @@ python-lib7z
 Python bindings for 7-Zip
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-pylib7z is a (moslty) direct binding to 7z.dll from the 7-zip project (7zip.org).
-This is forked from
+pylib7z is a Python binding for 7z.dll from the 7-zip project (7zip.org).
 
 7z.dll uses Windows COM-like calling conventions with its own interface for
 creating and querying objects.
