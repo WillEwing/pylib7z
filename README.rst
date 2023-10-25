@@ -34,7 +34,6 @@ By default the path to 7z.dll/7z.so will be autodetected.
 		print(format.name, ', '.join(format.extensions))
 
 	#type of archive will be autodetected
-	#pass in optional forceformat argument to force the use a particular format (use the name)
 	#pass in optional password argument to open encrypted archives.
 	with Archive('path_to.7z') as archive:
 		#extract all items to the directory, directory will be created if it doesn't exist
