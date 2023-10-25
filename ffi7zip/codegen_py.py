@@ -179,7 +179,8 @@ def build_thunks_py() -> bytes:
         """#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # pylint: disable=broad-exception-caught,invalid-name,no-name-in-module
-# type: ignore"""
+# type: ignore
+"""
         + astc.unparse(ast.fix_missing_locations(build_thunks_ast()))
     ).encode("utf-8")
 

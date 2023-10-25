@@ -5,7 +5,7 @@
 Python bindings for the 7-Zip Library: Archives
 """
 
-from enum import KEEP, IntEnum, IntFlag
+from enum import IntEnum, IntFlag
 from io import BytesIO
 from logging import getLogger
 from os import SEEK_SET, PathLike
@@ -145,7 +145,7 @@ class ArchiveProps(IntEnum):
     DEV_MINOR = 104
 
 
-class ArchiveItemAttrib(IntFlag, boundary=KEEP):
+class ArchiveItemAttrib(IntFlag):
     """
     Archive item attribute flags.
     """

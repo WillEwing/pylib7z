@@ -5,7 +5,7 @@
 Python bindings for 7-zip: PROPVARIANT
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from typing import Tuple, Union
 from uuid import UUID
@@ -13,6 +13,8 @@ from uuid import UUID
 from cffi.api import FFI
 
 from . import ffi, lib
+
+UTC = timezone.utc
 
 
 class VARTYPE(IntEnum):
