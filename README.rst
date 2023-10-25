@@ -1,10 +1,10 @@
-python-lib7zip
+python-lib7z
 ==============
 
 Python bindings for 7-Zip
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-pylib7zip-ng is a (moslty) direct binding to 7z.dll from the 7-zip project (7zip.org).
+pylib7z is a (moslty) direct binding to 7z.dll from the 7-zip project (7zip.org).
 This is forked from
 
 7z.dll uses Windows COM-like calling conventions with its own interface for
@@ -13,6 +13,7 @@ creating and querying objects.
 Only reading metadata and extracting files is currently supported.
 The library currently relies on on Windows API for memory allocation/deallocation.
 
+pylib7z is a fork of pylib7zip_.
 
 Dependencies
 ------------
@@ -27,7 +28,7 @@ By default the path to 7z.dll/7z.so will be autodetected.
 
 .. code:: python
 
-	from lib7zip import Archive, formats
+	from lib7z import Archive, formats
 
 	#view information on supported formats
 	for format in formats:
@@ -66,3 +67,4 @@ This code is licensed under the BSD 2-clause license.
 .. _7-zip: https://7-zip.org
 .. _CFFI: https://cffi.readthedocs.io/en/stable/
 .. _ast-compat: https://github.com/python-compiler-tools/ast-compat/
+.. _pylib7zip: https://github.com/harvimt/pylib7zip
