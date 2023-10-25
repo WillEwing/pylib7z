@@ -3,6 +3,8 @@ import logging
 import os
 import sys
 from collections import namedtuple
+from typing import Generator
+from zipfile import ZipFile
 
 import pytest
 
@@ -126,3 +128,19 @@ def test_extract_badpass():
     """
     with Archive("tests/simple_crypt.7z") as archive:
         assert archive[0].read_bytes(password="notthepass") == b"Hello World!\n"
+
+
+def test_extract_extract_many_files_to_dir(tmpdir):
+    """
+    Test extracting large numbers of files to a directory.
+    If extract() does not close file handles during its process, this will fail.
+    """
+
+    temp_zip_path = os.path.join(tmpdir, "many_files.zip")
+    with ZipFile(temp_zip_path, "w") as temp_zip:
+        # NOTE: Default file limit on Windows is 512.
+        for index in range(65536):
+            temp_zip.writestr(f"file-{index}", f"This is file {index}.")
+
+    with Archive(temp_zip_path) as archive:
+        archive.extract(tmpdir)
