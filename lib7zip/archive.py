@@ -217,7 +217,7 @@ class Archive:
             self.close()
             raise
 
-        self.__items_by_path = {}
+        self._item_indices_by_path = {}
 
     def __get_possible_formats(self) -> Generator[FormatInfo, None, None]:
         extension = None
@@ -229,6 +229,7 @@ class Archive:
             yield fmt
 
     def __try_open_as_format(self, fmt: FormatInfo) -> bool:
+        log.debug("Trying to open %r as %s", self.filename, fmt.name)
         try:
             archive = CreateObject(fmt.clsid, IID_IInArchive)
         except RuntimeError:
@@ -237,10 +238,11 @@ class Archive:
         stream = self.stream.get_instance(IID_IInStream)
         open_callback = self.open_callback.get_instance(IID_IArchiveOpenCallback)
         result = archive.vtable.Open(archive, stream, ffi.NULL, open_callback)  # type: ignore
-        if result & 0x80000000:
+        if result & 0x80000000 or result == 1:
             ffi.release(archive)
             return False
 
+        log.debug("%r opened successfully as %s", self.filename, fmt.name)
         self.archive = archive
         return True
 
@@ -282,7 +284,7 @@ class Archive:
             prop_name = prop_name.lower()
             prop_type = VARTYPE(var_type_ptr[0])
 
-            log.debug("Got property %d: %s (type: %s)", prop_id, prop_name, prop_type.name)
+            # log.debug("Got property %d: %s (type: %s)", prop_id, prop_name, prop_type.name)
             properties[prop_name] = prop_id
 
         ffi.release(var_type_ptr)
@@ -292,14 +294,14 @@ class Archive:
         return properties
 
     def __read_archive_properties(self) -> None:
-        log.debug("Reading archive property info.")
+        # log.debug("Reading archive property info.")
         self._archive_properties = self.__read_properties(
             self.archive.vtable.GetNumberOfArchiveProperties,
             self.archive.vtable.GetArchivePropertyInfo,
         )
 
     def __read_archive_item_properties(self) -> None:
-        log.debug("Reading archive item property info.")
+        # log.debug("Reading archive item property info.")
         self._archive_item_properties = self.__read_properties(
             self.archive.vtable.GetNumberOfProperties,
             self.archive.vtable.GetPropertyInfo,

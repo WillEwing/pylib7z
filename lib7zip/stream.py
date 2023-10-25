@@ -5,7 +5,7 @@
 Python bindings for the 7-Zip Library: IO Streams
 """
 
-from os import PathLike
+from os import SEEK_CUR, SEEK_END, SEEK_SET, PathLike
 from typing import BinaryIO, Union
 
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
@@ -15,6 +15,7 @@ from .iids import (
     IID_IOutStream,
     IID_ISequentialInStream,
     IID_ISequentialOutStream,
+    IID_IStreamGetSize,
 )
 from .unknown import PyUnknown
 
@@ -29,10 +30,12 @@ class PyInStream(PyUnknown):
     IIDS = (
         IID_IInStream,
         IID_ISequentialInStream,
+        IID_IStreamGetSize,
     )
 
-    def __init__(self, stream: BinaryIO) -> None:
+    def __init__(self, stream: BinaryIO, stream_size=None) -> None:
         self.stream = stream
+        self.stream_size = stream_size
         super().__init__()
 
     def Read(self, array_ptr, bytes_to_read, bytes_read):
@@ -53,6 +56,13 @@ class PyInStream(PyUnknown):
             return HRESULT.S_OK
         except IOError:
             return HRESULT.E_FAIL
+
+    def GetSize(self, size_ptr):
+        """Get the size of the backing object."""
+        last_position = self.stream.seek(0, SEEK_CUR)
+        size_ptr[0] = self.stream.seek(0, SEEK_END)
+        self.stream.seek(last_position, SEEK_SET)
+        return HRESULT.S_OK
 
 
 class FileInStream(PyInStream):
@@ -107,3 +117,13 @@ class FileOutStream(PyOutStream):
 
     def __init__(self, filename: Union[PathLike, str]) -> None:
         super().__init__(open(filename, "wb"))
+
+    def Close(self) -> None:
+        """Close the stream."""
+        self.stream.close()
+
+    def Release(self):
+        refs = super().Release()
+        if refs == 0:
+            self.Close()
+        return refs

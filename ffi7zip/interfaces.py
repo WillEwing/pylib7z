@@ -215,6 +215,20 @@ IOutStream = CInterface(
     ],
 )
 
+IStreamGetSize = CInterface(
+    "IStreamGetSize",
+    make_7zip_iid(0x03, 0x06),
+    IUnknown,
+    [
+        CMethod(
+            "GetSize",
+            [
+                ("uint64_t *", "size"),
+            ],
+        ),
+    ],
+)
+
 IProgress = CInterface(
     "IProgress",
     make_7zip_iid(0x00, 0x05),
@@ -265,6 +279,22 @@ IArchiveExtractCallback = CInterface(
                 ("int32_t", "op_result"),
             ],
         ),
+    ],
+)
+
+IArchiveExtractCallbackMessage2 = CInterface(
+    "IArchiveExtractCallbackMessage2",
+    make_7zip_iid(0x06, 0x22),
+    IUnknown,
+    [
+        CMethod(
+            "ReportExtractResult",
+            [
+                ("uint32_t", "indexType"),
+                ("uint32_t", "index"),
+                ("uint32_t", "op_res"),
+            ],
+        )
     ],
 )
 
@@ -523,14 +553,17 @@ ISetCompressCodecsInfo = CInterface(
     ],
 )
 
+
 INTERFACES = [
     IUnknown,
     ISequentialInStream,
     IInStream,
     ISequentialOutStream,
     IOutStream,
+    IStreamGetSize,
     IProgress,
     IArchiveExtractCallback,
+    IArchiveExtractCallbackMessage2,
     IArchiveOpenCallback,
     IArchiveOpenSetSubArchiveName,
     IArchiveOpenVolumeCallback,

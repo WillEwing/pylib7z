@@ -5,18 +5,22 @@
 Python base class for COM objects "PyUnknown"
 """
 
+from logging import getLogger
 from typing import Dict, Tuple
 from uuid import UUID
 
 from .ffi7zip import ffi  # pylint: disable=no-name-in-module
 from .hresult import HRESULT
 from .iids import (
+    NAMES_BY_IID,
     IID_IUnknown,
     iid_opaque_impl_struct_name,
     iid_python_impl_struct_name,
     iid_python_vtable_ptr,
     unmarshall_guid,
 )
+
+log = getLogger("lib7zip")
 
 
 class PyUnknown:
@@ -58,6 +62,10 @@ class PyUnknown:
             out_ref[0] = instance
             return HRESULT.S_OK
         except KeyError:
+            if iid not in NAMES_BY_IID:
+                log.warning("QueryInterface: Unknown GUID {%s} from %s", iid, self.__class__.__name__)
+            else:
+                log.warning("QueryInterface: Requested %s from %s", NAMES_BY_IID[iid], self.__class__.__name__)
             out_ref[0] = ffi.NULL
             return HRESULT.E_NOINTERFACE
 
