@@ -41,7 +41,7 @@ By default the path to 7z.dll/7z.so will be autodetected.
 
 		#list all items in the archive and get their metadata
 		for item in archive:
-			print( item.isdir, item.path, item.crc)
+			print( item.is_dir, item.path, item.crc)
 
 		# extract items that match certain criteria
 		def filter_items(items):
